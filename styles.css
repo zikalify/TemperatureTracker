@@ -1,32 +1,36 @@
-:root {
-    --primary-color: #9c27b0;
-    --primary-light: #d05ce3;
-    --primary-dark: #6a0080;
-    --secondary-color: #f3e5f5;
-    --text-color: #333;
-    --light-gray: #f5f5f5;
-    --medium-gray: #e0e0e0;
-    --dark-gray: #757575;
-    --danger: #f44336;
-    --success: #4caf50;
-}
-
+/* Reset and Base Styles */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+:root {
+    --primary-color: #9c27b0;
+    --primary-light: #d05ce3;
+    --primary-dark: #6a0080;
+    --secondary-color: #ff9800;
+    --text-color: #333;
+    --text-light: #666;
+    --background: #f9f5fa;
+    --surface: #ffffff;
+    --error: #f44336;
+    --success: #4caf50;
+    --border-radius: 8px;
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s ease;
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.6;
+    background-color: var(--background);
     color: var(--text-color);
-    background-color: #f9f5fa;
+    line-height: 1.6;
     padding: 20px;
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 800px;
     margin: 0 auto;
     padding: 20px;
 }
@@ -34,371 +38,291 @@ body {
 header {
     text-align: center;
     margin-bottom: 30px;
-    color: var(--primary-dark);
+    padding: 20px 0;
+    border-bottom: 1px solid #eee;
 }
 
-h1 {
+header h1 {
+    color: var(--primary-color);
     margin-bottom: 10px;
-    font-size: 2.5rem;
+    font-size: 2.2em;
 }
 
-h2 {
+header p {
+    color: var(--text-light);
+    font-size: 1.1em;
+}
+
+/* Form Styles */
+.temperature-form {
+    background: var(--surface);
+    padding: 25px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 25px;
+}
+
+.temperature-form h2 {
     color: var(--primary-color);
     margin-bottom: 20px;
-    font-size: 1.8rem;
-}
-
-h3 {
-    color: var(--primary-dark);
-    margin-bottom: 10px;
-}
-
-section {
-    background: white;
-    border-radius: 8px;
-    padding: 25px;
-    margin-bottom: 25px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    font-size: 1.5em;
 }
 
 .form-group {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
 label {
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
     font-weight: 500;
-    color: var(--dark-gray);
+    color: var(--text-color);
 }
 
 input[type="date"],
 input[type="number"],
 textarea {
     width: 100%;
-    padding: 10px;
-    border: 1px solid var(--medium-gray);
-    border-radius: 4px;
-    font-size: 16px;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    font-size: 1em;
+    transition: var(--transition);
+}
+
+input[type="date"]:focus,
+input[type="number"]:focus,
+textarea:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(156, 39, 176, 0.2);
 }
 
 textarea {
     resize: vertical;
-    min-height: 60px;
+    min-height: 80px;
 }
 
-/* Date Input Styling */
-input[type="date"] {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 16px;
-    background-color: #f9f9f9;
-    color: #333;
-    -webkit-appearance: none; /* Remove default styling on iOS */
-}
-
-/* Hide the default date picker button */
-input[type="date"]::-webkit-calendar-picker-indicator {
-    opacity: 1;
-    color: #9c27b0;
-    font-size: 16px;
-    padding: 4px;
-    cursor: pointer;
-}
-
-/* Style the date input when it has a value */
-input[type="date"]:not(:focus):not(:placeholder-shown) {
-    color: #333;
-    background-color: #f9f9f9;
-}
-
-/* Style the date input when focused */
-input[type="date"]:focus {
-    outline: none;
-    border-color: #9c27b0;
-    box-shadow: 0 0 0 2px rgba(156, 39, 176, 0.2);
-}
-
-/* Ensure the date text is visible in the input */
-input[type="date"]::-webkit-datetime-edit {
-    color: #333;
-    padding: 0;
-}
-
-/* Hide the default date text */
-input[type="date"]::-webkit-datetime-edit-fields-wrapper {
-    color: #333;
-}
-
-/* Style the date picker dropdown */
-input[type="date"]::-webkit-inner-spin-button,
-input[type="date"]::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
-/* Custom Date Picker */
 .date-picker {
     position: relative;
-    width: 100%;
 }
 
-.date-picker input[type="date"] {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
-    box-sizing: border-box;
-}
-
-.date-picker .date-display {
+.date-display {
     display: block;
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 16px;
-    background-color: #f9f9f9;
-    color: #333;
-    text-align: left;
-    pointer-events: none;
+    margin-top: 5px;
+    color: var(--text-light);
+    font-size: 0.9em;
 }
 
-.date-picker input[type="date"]:focus + .date-display {
-    border-color: #9c27b0;
-    box-shadow: 0 0 0 2px rgba(156, 39, 176, 0.2);
+/* Ovulation Info Section */
+.ovulation-info-section {
+    background: var(--surface);
+    padding: 25px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 25px;
 }
 
-/* Hide the calendar icon in WebKit browsers */
-.date-picker input[type="date"]::-webkit-calendar-picker-indicator {
-    opacity: 0;
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    right: 0;
-    cursor: pointer;
+.ovulation-info-section h2 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    font-size: 1.5em;
 }
 
-.btn {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s;
-}
-
-.btn:hover {
-    background-color: var(--primary-dark);
-}
-
-.btn-cancel {
-    background-color: var(--dark-gray);
-    margin-left: 10px;
-}
-
-.btn-cancel:hover {
-    background-color: #616161;
-}
-
-/* Entries List */
-.entries-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 15px;
-    transition: max-height 0.3s ease-in-out;
-    overflow: hidden;
-}
-
-.entry-card {
-    background: var(--secondary-color);
-    border-left: 4px solid var(--primary-color);
+.ovulation-info {
+    background: #f8f0fa;
     padding: 15px;
-    border-radius: 4px;
-    position: relative;
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--primary-color);
+    margin-bottom: 15px;
 }
 
-.entry-date {
-    font-weight: bold;
-    color: var(--primary-dark);
-    margin-bottom: 5px;
+.ovulation-info p {
+    margin-bottom: 8px;
 }
 
-.entry-temp {
-    font-size: 1.5rem;
-    font-weight: bold;
-    margin: 5px 0;
+.ovulation-info p:last-child {
+    margin-bottom: 0;
 }
 
-.entry-notes {
-    color: var(--dark-gray);
-    margin: 5px 0;
-}
-
-.entry-actions {
-    margin-top: 10px;
-    display: flex;
-    gap: 10px;
-}
-
-.entry-actions button {
-    background: none;
-    border: none;
-    color: var(--primary-color);
-    cursor: pointer;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.entry-actions button:hover {
-    text-decoration: underline;
-}
-
-/* Expand/Collapse Button */
-#toggleEntries {
-    background: none;
-    border: none;
-    color: var(--primary-color);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    margin: 10px 0;
-    padding: 5px 10px;
-    border-radius: 4px;
-    transition: background-color 0.2s;
-}
-
-#toggleEntries:hover {
-    background-color: rgba(156, 39, 176, 0.1);
-}
-
-#toggleEntries i {
-    transition: transform 0.3s;
-}
-
-.entries-list.expanded + #toggleEntries i {
-    transform: rotate(180deg);
-}
-
-.entries-list.collapsed {
-    max-height: 300px;
-    mask-image: linear-gradient(to bottom, black 75%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 75%, transparent 100%);
-}
-
-.entries-list.expanded {
-    max-height: 2000px;
-    mask-image: none;
-    -webkit-mask-image: none;
+.ovulation-info .info-note {
+    font-size: 0.9em;
+    color: var(--text-light);
+    font-style: italic;
 }
 
 /* Entries Section */
 .entries {
-    margin-top: 40px;
+    background: var(--surface);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
 }
 
 .entries-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.entries-header h2 {
+    color: var(--primary-color);
+    font-size: 1.5em;
+    margin: 0;
+}
+
+.entries-list {
+    max-height: 0;
+    overflow-y: auto;
+    transition: max-height 0.3s ease-out;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-light) #f0f0f0;
+}
+
+.entries-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.entries-list::-webkit-scrollbar-track {
+    background: #f0f0f0;
+    border-radius: 3px;
+}
+
+.entries-list::-webkit-scrollbar-thumb {
+    background-color: var(--primary-light);
+    border-radius: 3px;
+}
+
+.entries-list.expanded {
+    max-height: 60vh; /* Use viewport height for better responsiveness */
+    overflow-y: auto;
+}
+
+.entries-list.collapsed {
+    max-height: 0;
+}
+
+.entry-card {
+    padding: 15px 20px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: var(--transition);
+}
+
+.entry-card:last-child {
+    border-bottom: none;
+}
+
+.entry-card:hover {
+    background-color: #faf5ff;
+}
+
+.entry-date {
+    font-weight: 600;
+    color: var(--primary-dark);
+    margin-bottom: 5px;
+}
+
+.entry-temp {
+    font-size: 1.4em;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin: 5px 0;
+}
+
+.entry-notes {
+    color: var(--text-light);
+    margin: 8px 0;
+    font-size: 0.95em;
+    line-height: 1.5;
+}
+
+.entry-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.entry-actions button {
+    background: none;
+    border: 1px solid #ddd;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: var(--transition);
+}
+
+.entry-actions button i {
+    font-size: 0.9em;
+}
+
+.entry-actions button:hover {
+    background: #f5f5f5;
+}
+
+.entry-actions button.danger {
+    color: var(--error);
+    border-color: #ffcdd2;
+}
+
+.entry-actions button.danger:hover {
+    background: #ffebee;
+}
+
+/* Buttons */
+.btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 500;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn-cancel {
+    background-color: #f5f5f5;
+    color: var(--text-color);
+}
+
+.btn-cancel:hover {
+    background-color: #e0e0e0;
 }
 
 .btn-expand {
-    padding: 6px 12px;
-    font-size: 0.9rem;
-    background-color: var(--light-gray);
+    background: none;
     color: var(--primary-color);
-    border: 1px solid var(--medium-gray);
+    border: 1px solid var(--primary-color);
+    padding: 8px 15px;
+    font-size: 0.9em;
 }
 
 .btn-expand:hover {
-    background-color: var(--medium-gray);
+    background-color: #f3e5f5;
+    transform: none;
 }
 
-/* Insights */
-.insight-box {
-    background: var(--secondary-color);
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-
-.chart-container {
-    position: relative;
-    height: 300px;
-    width: 100%;
-}
-
-/* Cycle Section */
-.cycle-section {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.cycle-section h2 {
-    color: #6c5ce7;
-    margin-top: 0;
-    margin-bottom: 1rem;
-    font-size: 1.5rem;
-}
-
-.cycle-section .form-group {
-    display: flex;
-    gap: 1rem;
-    align-items: flex-end;
-    margin-bottom: 0.5rem;
-}
-
-.cycle-section .form-group label {
-    margin-bottom: 0;
-    font-weight: 500;
-}
-
-.cycle-section .btn {
-    padding: 0.5rem 1.5rem;
-    background-color: #6c5ce7;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.cycle-section .btn:hover {
-    background-color: #5d4aec;
-}
-
-.cycle-section .hint {
-    font-size: 0.85rem;
-    color: #666;
-    margin: 0.5rem 0 0;
-    font-style: italic;
-}
-
-/* Success Message */
-.success-message {
-    color: #28a745;
-    font-size: 0.9rem;
-    margin-top: 0.5rem;
-    font-weight: 500;
-    animation: fadeIn 0.3s ease-in;
-}
-
-/* Modal */
+/* Modal Styles */
 .modal {
     display: none;
     position: fixed;
@@ -415,32 +339,34 @@ input[type="date"]::-webkit-outer-spin-button {
 .modal-content {
     background: white;
     padding: 30px;
-    border-radius: 8px;
+    border-radius: var(--border-radius);
     width: 90%;
     max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
     position: relative;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+}
+
+.modal h2 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    font-size: 1.5em;
 }
 
 .close {
     position: absolute;
     top: 15px;
     right: 20px;
-    font-size: 24px;
+    font-size: 28px;
+    font-weight: bold;
+    color: #888;
     cursor: pointer;
-    color: var(--dark-gray);
+    transition: var(--transition);
 }
 
 .close:hover {
-    color: var(--text-color);
-}
-
-/* Ovulation Info */
-.ovulation-info {
-    text-align: center;
-    color: var(--primary-dark);
-    font-size: 1.1rem;
-    margin: -15px 0 20px 0;
-    font-weight: 500;
+    color: #333;
 }
 
 /* Responsive Design */
@@ -449,21 +375,42 @@ input[type="date"]::-webkit-outer-spin-button {
         padding: 10px;
     }
     
-    section {
+    .temperature-form,
+    .ovulation-info-section,
+    .entries {
         padding: 15px;
     }
     
-    .entries-list {
-        grid-template-columns: 1fr;
+    .entry-actions {
+        flex-direction: column;
     }
+    
+    .entry-actions button {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-light);
+}
+
+.empty-state i {
+    font-size: 3em;
+    color: #e0e0e0;
+    margin-bottom: 15px;
+    display: block;
 }
 
 /* Animations */
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-5px); }
+    from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
 .entry-card {
-    animation: fadeIn 0.3s ease-out;
+    animation: fadeIn 0.3s ease-out forwards;
 }

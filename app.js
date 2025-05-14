@@ -1,10 +1,7 @@
 // DOM Elements
 const tempForm = document.getElementById('tempForm');
 const entriesList = document.getElementById('entriesList');
-const chartCanvas = document.getElementById('temperatureChart');
-
-// Initialize chart
-let temperatureChart;
+const ovulationInfo = document.getElementById('ovulationInfo');
 
 // Set default date to today and format it
 document.addEventListener('DOMContentLoaded', () => {
@@ -24,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    initializeChart();
     loadEntries();
     
     // Add event listener for expand/collapse button if it exists
@@ -117,130 +113,33 @@ function loadEntries() {
     
     if (entries.length === 0) {
         entriesList.innerHTML = '<p>No entries yet. Add your first temperature reading above.</p>';
-    } else {
-        // Sort entries by date (newest first)
-        const sortedEntries = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
-        
-        sortedEntries.forEach(entry => {
-            const entryElement = document.createElement('div');
-            entryElement.className = 'entry-card';
-            entryElement.innerHTML = `
-                <div class="entry-date">${formatDate(entry.date)}</div>
-                <div class="entry-temp">${entry.temperature}°C</div>
-                ${entry.notes ? `<div class="entry-notes">${entry.notes}</div>` : ''}
-                <div class="entry-actions">
-                    <button onclick="editEntry('${entry.id}')">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
-                    <button onclick="deleteEntry('${entry.id}')" class="danger">
-                        <i class="fas fa-trash"></i> Delete
-                    </button>
-                </div>
-            `;
-            entriesList.appendChild(entryElement);
-        });
-        
-        updateChart(entries);
+        updateOvulationInfo(entries);
+        return;
     }
-}
-
-// Initialize chart
-function initializeChart() {
-    const ctx = chartCanvas.getContext('2d');
     
-    // Register the zoom/pan plugin
-    Chart.register(ChartZoom);
+    // Sort entries by date (newest first)
+    const sortedEntries = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
     
-    temperatureChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            datasets: [{
-                label: 'Temperature (°C)',
-                borderColor: '#9c27b0',
-                backgroundColor: 'rgba(156, 39, 176, 0.1)',
-                borderWidth: 2,
-                tension: 0.3,
-                fill: true,
-                pointRadius: 4,
-                pointHoverRadius: 6
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: {
-                duration: 0 // Disable animations for better performance during zoom/pan
-            },
-            scales: {
-                y: {
-                    beginAtZero: false,
-                    title: {
-                        display: true,
-                        text: 'Temperature (°C)'
-                    },
-                    ticks: {
-                        precision: 2
-                    }
-                },
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Date'
-                    },
-                    ticks: {
-                        autoSkip: true,
-                        maxRotation: 45,
-                        minRotation: 45
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top'
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return `${context.parsed.y}°C`;
-                        }
-                    }
-                },
-                zoom: {
-                    pan: {
-                        enabled: true,
-                        mode: 'x',
-                        modifierKey: null, // Remove shift key requirement
-                        scaleMode: 'x',
-                        threshold: 10,
-                        speed: 20,
-                        speedMultiplier: 0.5
-                    },
-                    zoom: {
-                        drag: {
-                            enabled: true,
-                            backgroundColor: 'rgba(156, 39, 176, 0.2)',
-                            borderColor: 'rgba(156, 39, 176, 0.8)',
-                            borderWidth: 1,
-                            threshold: 10
-                        },
-                        wheel: {
-                            enabled: true,
-                            speed: 0.1,
-                        },
-                        pinch: {
-                            enabled: true
-                        },
-                        mode: 'x',
-                        onZoomComplete: function({ chart }) {
-                            // This prevents the chart from resetting the zoom level
-                            chart.update('none');
-                        }
-                    }
-                }
-            }
-        }
+    sortedEntries.forEach(entry => {
+        const entryElement = document.createElement('div');
+        entryElement.className = 'entry-card';
+        entryElement.innerHTML = `
+            <div class="entry-date">${formatDate(entry.date)}</div>
+            <div class="entry-temp">${entry.temperature}°C</div>
+            ${entry.notes ? `<div class="entry-notes">${entry.notes}</div>` : ''}
+            <div class="entry-actions">
+                <button onclick="editEntry('${entry.id}')">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button onclick="deleteEntry('${entry.id}')" class="danger">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        `;
+        entriesList.appendChild(entryElement);
     });
+    
+    updateOvulationInfo(entries);
 }
 
 // Calculate most likely ovulation date based on temperature data
@@ -273,167 +172,49 @@ function calculateOvulationDate(entries) {
     return null; // No clear ovulation detected
 }
 
-// Update chart with entries
-function updateChart(entries) {
-    if (!temperatureChart || !entries || entries.length === 0) {
+// Update ovulation information display
+function updateOvulationInfo(entries) {
+    if (!entries || entries.length === 0) {
+        ovulationInfo.innerHTML = '<p>Add at least 7 days of temperature data to estimate your ovulation date.</p>';
         return;
     }
     
-    try {
-        // Sort entries by date (newest first)
-        const sortedEntries = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
-        
-        if (sortedEntries.length === 0) return;
-        
-        // Update ovulation date display
-        const ovulationDate = calculateOvulationDate([...sortedEntries].reverse()); // Need to reverse for ovulation calculation
-        const ovulationElement = document.getElementById('ovulationDate');
-        if (ovulationDate) {
-            ovulationElement.textContent = `Most likely previous ovulation: ${formatDate(ovulationDate.toISOString().split('T')[0])}`;
-            ovulationElement.style.display = 'block';
+    const ovulationDate = calculateOvulationDate([...entries].sort((a, b) => new Date(a.date) - new Date(b.date)));
+    
+    if (ovulationDate) {
+        ovulationInfo.innerHTML = `
+            <p><strong>Most likely previous ovulation:</strong> ${formatDate(ovulationDate.toISOString().split('T')[0])}</p>
+            <p class="info-note">Based on your temperature data. Ovulation typically occurs 1-2 days before a sustained temperature rise.</p>
+        `;
+    } else {
+        if (entries.length < 7) {
+            const daysNeeded = 7 - entries.length;
+            ovulationInfo.innerHTML = `
+                <p>Not enough data to estimate ovulation. Add ${daysNeeded} more day${daysNeeded > 1 ? 's' : ''} of temperature data.</p>
+            `;
         } else {
-            ovulationElement.style.display = 'none';
+            ovulationInfo.innerHTML = `
+                <p>No clear ovulation pattern detected in your temperature data.</p>
+                <p class="info-note">Keep tracking your temperature daily for more accurate predictions.</p>
+            `;
         }
-        
-        // Determine how many days to show based on screen width
-        let daysToShow;
-        const screenWidth = window.innerWidth;
-        
-        if (screenWidth < 480) {         // Mobile
-            daysToShow = 14;             // 2 weeks on very small screens
-        } else if (screenWidth < 768) {  // Small tablets
-            daysToShow = 21;             // 3 weeks on small tablets
-        } else if (screenWidth < 1024) { // Tablets
-            daysToShow = 28;             // 4 weeks on tablets
-        } else {                         // Desktops and larger
-            daysToShow = 35;             // 5 weeks on desktops
-        }
-        
-        // Calculate the cutoff date
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - daysToShow);
-        
-        // Filter entries to only include recent ones
-        const recentEntries = sortedEntries.filter(entry => {
-            const entryDate = new Date(entry.date);
-            return entryDate >= cutoffDate;
-        });
-        
-        if (recentEntries.length === 0) {
-            // If no recent entries, just use the most recent one
-            recentEntries.push(sortedEntries[0]);
-        }
-        
-        // Sort recent entries by date (oldest first for the chart)
-        recentEntries.sort((a, b) => new Date(a.date) - new Date(b.date));
-        
-        // Create data points with breaks for missing dates
-        const data = [];
-        const labels = [];
-        
-        // Convert all dates to Date objects for comparison
-        const dateObjects = recentEntries.map(entry => ({
-            date: new Date(entry.date),
-            temperature: parseFloat(entry.temperature)
-        }));
-        
-        // Start from the first date or cutoff date, whichever is more recent
-        const startDate = new Date(Math.max(
-            dateObjects[0].date.getTime(),
-            cutoffDate.getTime()
-        ));
-        
-        const endDate = new Date(dateObjects[dateObjects.length - 1].date);
-        
-        let currentDate = new Date(startDate);
-        let dataIndex = 0;
-        
-        // Loop through each day in the range
-        while (currentDate <= endDate) {
-            const currentDateStr = currentDate.toISOString().split('T')[0];
-            const formattedDate = formatDate(currentDateStr);
-            
-            // Check if we have data for this date
-            if (dataIndex < dateObjects.length && 
-                dateObjects[dataIndex].date.toISOString().split('T')[0] === currentDateStr) {
-                // We have data for this date
-                data.push({
-                    x: formattedDate,
-                    y: dateObjects[dataIndex].temperature
-                });
-                dataIndex++;
-            } else {
-                // No data for this date, add a break
-                data.push({
-                    x: formattedDate,
-                    y: null
-                });
-            }
-            
-            labels.push(formattedDate);
-            
-            // Move to next day
-            currentDate.setDate(currentDate.getDate() + 1);
-        }
-        
-        // Update chart data
-        temperatureChart.data.labels = labels;
-        temperatureChart.data.datasets[0].data = data;
-        
-        // Adjust y-axis range based on temperature values (only non-null values)
-        const temps = data.filter(point => point.y !== null).map(point => point.y);
-        if (temps.length > 0) {
-            const minTemp = Math.min(...temps);
-            const maxTemp = Math.max(...temps);
-            temperatureChart.options.scales.y.min = Math.floor(minTemp - 0.5);
-            temperatureChart.options.scales.y.max = Math.ceil(maxTemp + 0.5);
-        }
-        
-        // Configure the dataset to show gaps for null values
-        temperatureChart.data.datasets[0].spanGaps = false;
-        
-        // Adjust x-axis tick configuration based on number of days
-        temperatureChart.options.scales.x.ticks = {
-            autoSkip: true,
-            maxRotation: 45,
-            minRotation: 45,
-            maxTicksLimit: Math.min(10, daysToShow) // Show at most 10 labels
-        };
-        
-        temperatureChart.update();
-    } catch (error) {
-        console.error('Error updating chart:', error);
     }
 }
 
-// Add event listener for window resize to update the chart when screen size changes
-let resizeTimer;
-window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-        const entries = getEntries();
-        updateChart(entries);
-    }, 250); // Debounce resize events
-});
-
 // Helper function to update date display
 function updateDateDisplay(inputElement, displayElement) {
-    if (!inputElement.value) return;
+    if (!inputElement || !displayElement) return;
     
-    const selectedDate = new Date(inputElement.value);
-    const formatted = selectedDate.toLocaleDateString('en-US', { 
-        day: '2-digit', 
-        month: 'short', 
-        year: 'numeric' 
-    });
+    const date = new Date(inputElement.value);
+    if (isNaN(date.getTime())) return;
     
-    // Update the display element
-    if (displayElement) {
-        displayElement.textContent = formatted;
-    }
-    
-    // Set the title for better accessibility
-    inputElement.title = `Selected date: ${formatted}`;
+    const options = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    };
+    displayElement.textContent = date.toLocaleDateString('en-US', options);
 }
 
 // Edit entry
@@ -446,7 +227,6 @@ function editEntry(id) {
         document.getElementById('editDate').value = entry.date;
         document.getElementById('editTemperature').value = entry.temperature;
         document.getElementById('editNotes').value = entry.notes || '';
-        
         document.getElementById('editModal').style.display = 'block';
     }
 }
@@ -464,7 +244,7 @@ document.getElementById('editForm').addEventListener('submit', function(e) {
     const index = entries.findIndex(e => e.id === id);
     
     if (index !== -1) {
-        entries[index] = { id, date, temperature, notes };
+        entries[index] = { ...entries[index], date, temperature, notes };
         localStorage.setItem('temperatureEntries', JSON.stringify(entries));
         loadEntries();
         document.getElementById('editModal').style.display = 'none';
@@ -482,20 +262,19 @@ function deleteEntry(id) {
 
 // Helper function to format date as "DD MMM YYYY"
 function formatDate(dateString) {
-    if (!dateString) return '';
     const options = { day: '2-digit', month: 'short', year: 'numeric' };
     return new Date(dateString).toLocaleDateString('en-US', options);
 }
 
 // Register Service Worker
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then((registration) => {
-        console.log('ServiceWorker registration successful with scope: ', registration.scope);
-      })
-      .catch((error) => {
-        console.log('ServiceWorker registration failed: ', error);
-      });
-  });
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+                console.log('ServiceWorker registration successful');
+            })
+            .catch(err => {
+                console.log('ServiceWorker registration failed: ', err);
+            });
+    });
 }

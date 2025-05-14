@@ -46,11 +46,10 @@
                 </form>
             </section>
 
-            <section class="chart-section">
-                <h2>Temperature Chart</h2>
-                <p id="ovulationDate" class="ovulation-info"></p>
-                <div class="chart-container">
-                    <canvas id="temperatureChart"></canvas>
+            <section class="ovulation-info-section">
+                <h2>Ovulation Information</h2>
+                <div id="ovulationInfo" class="ovulation-info">
+                    <p>Add at least 7 days of temperature data to estimate your ovulation date.</p>
                 </div>
             </section>
 
@@ -93,11 +92,6 @@
         </div>
     </div>
 
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <!-- Chart.js Zoom/pan plugin -->
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
-    
     <!-- Custom Script -->
     <script src="app.js"></script>
 </body>
