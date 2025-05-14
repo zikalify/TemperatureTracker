@@ -2,9 +2,100 @@
 const tempForm = document.getElementById('tempForm');
 const entriesList = document.getElementById('entriesList');
 const ovulationInfo = document.getElementById('ovulationInfo');
+const celsiusBtn = document.getElementById('celsiusBtn');
+const fahrenheitBtn = document.getElementById('fahrenheitBtn');
+
+// Temperature conversion functions
+function celsiusToFahrenheit(celsius) {
+    return (celsius * 9/5) + 32;
+}
+
+function fahrenheitToCelsius(fahrenheit) {
+    return (fahrenheit - 32) * 5/9;
+}
+
+// Get current temperature unit (C or F)
+function getCurrentUnit() {
+    return celsiusBtn.classList.contains('active') ? 'C' : 'F';
+}
+
+// Format temperature based on current unit
+function formatTemperature(temp, withUnit = true) {
+    const isCelsius = getCurrentUnit() === 'C';
+    let displayTemp = parseFloat(temp);
+    
+    if (!isCelsius) {
+        displayTemp = celsiusToFahrenheit(displayTemp);
+    }
+    
+    // Round to 1 decimal place
+    displayTemp = Math.round(displayTemp * 10) / 10;
+    
+    return withUnit ? `${displayTemp}°${isCelsius ? 'C' : 'F'}` : displayTemp;
+}
+
+// Convert input temperature to Celsius for storage
+function getTempForStorage(temp) {
+    const isCelsius = getCurrentUnit() === 'C';
+    return isCelsius ? parseFloat(temp) : fahrenheitToCelsius(parseFloat(temp));
+}
+
+// Update temperature display in the form
+function updateTempInputs() {
+    const tempInput = document.getElementById('temperature');
+    const editTempInput = document.getElementById('editTemperature');
+    
+    // Update placeholders and labels
+    const unit = getCurrentUnit();
+    document.querySelector('label[for="temperature"]').textContent = `Temperature (°${unit})`;
+    document.querySelector('label[for="editTemperature"]').textContent = `Temperature (°${unit})`;
+    
+    // Convert current values if they exist
+    if (tempInput.value) {
+        tempInput.value = formatTemperature(tempInput.value, false);
+    }
+    
+    if (editTempInput.value) {
+        editTempInput.value = formatTemperature(editTempInput.value, false);
+    }
+}
 
 // Set default date to today and format it
 document.addEventListener('DOMContentLoaded', () => {
+    // Load saved unit preference
+    const savedUnit = localStorage.getItem('temperatureUnit') || 'C';
+    if (savedUnit === 'F') {
+        celsiusBtn.classList.remove('active');
+        fahrenheitBtn.classList.add('active');
+    } else {
+        celsiusBtn.classList.add('active');
+        fahrenheitBtn.classList.remove('active');
+    }
+    
+    // Update temperature display based on saved preference
+    updateTempInputs();
+    
+    // Add event listeners for unit toggle buttons
+    celsiusBtn.addEventListener('click', () => {
+        if (!celsiusBtn.classList.contains('active')) {
+            celsiusBtn.classList.add('active');
+            fahrenheitBtn.classList.remove('active');
+            localStorage.setItem('temperatureUnit', 'C');
+            updateTempInputs();
+            loadEntries();
+        }
+    });
+    
+    fahrenheitBtn.addEventListener('click', () => {
+        if (!fahrenheitBtn.classList.contains('active')) {
+            fahrenheitBtn.classList.add('active');
+            celsiusBtn.classList.remove('active');
+            localStorage.setItem('temperatureUnit', 'F');
+            updateTempInputs();
+            loadEntries();
+        }
+    });
+    
     const today = new Date();
     const formattedDate = today.toISOString().split('T')[0];
     const dateInput = document.getElementById('date');
@@ -70,7 +161,7 @@ function handleFormSubmit(e) {
     e.preventDefault();
     
     const date = document.getElementById('date').value;
-    const temperature = parseFloat(document.getElementById('temperature').value);
+    const temperature = getTempForStorage(document.getElementById('temperature').value);
     const notes = document.getElementById('notes').value;
     
     const entry = {
@@ -125,7 +216,7 @@ function loadEntries() {
         entryElement.className = 'entry-card';
         entryElement.innerHTML = `
             <div class="entry-date">${formatDate(entry.date)}</div>
-            <div class="entry-temp">${entry.temperature}°C</div>
+            <div class="entry-temp">${formatTemperature(entry.temperature)}</div>
             ${entry.notes ? `<div class="entry-notes">${entry.notes}</div>` : ''}
             <div class="entry-actions">
                 <button onclick="editEntry('${entry.id}')">
@@ -225,7 +316,7 @@ function editEntry(id) {
     if (entry) {
         document.getElementById('editId').value = entry.id;
         document.getElementById('editDate').value = entry.date;
-        document.getElementById('editTemperature').value = entry.temperature;
+        document.getElementById('editTemperature').value = formatTemperature(entry.temperature, false);
         document.getElementById('editNotes').value = entry.notes || '';
         document.getElementById('editModal').style.display = 'block';
     }
@@ -237,7 +328,7 @@ document.getElementById('editForm').addEventListener('submit', function(e) {
     
     const id = document.getElementById('editId').value;
     const date = document.getElementById('editDate').value;
-    const temperature = parseFloat(document.getElementById('editTemperature').value);
+    const temperature = getTempForStorage(document.getElementById('editTemperature').value);
     const notes = document.getElementById('editNotes').value;
     
     const entries = getEntries();
