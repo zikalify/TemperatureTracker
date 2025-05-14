@@ -241,26 +241,67 @@ function calculateOvulationDate(entries) {
 
     const sortedEntries = [...entries].sort((a, b) => new Date(a.date) - new Date(b.date));
     
-    // Look for a sustained temperature rise of at least 0.2°C above the previous 6 days' average
+    // Original ovulation detection logic
     for (let i = 6; i < sortedEntries.length; i++) {
         const currentTemp = parseFloat(sortedEntries[i].temperature);
         const previousTemps = sortedEntries.slice(i - 6, i).map(entry => parseFloat(entry.temperature));
         const avgPrevTemp = previousTemps.reduce((sum, temp) => sum + temp, 0) / 6;
         
-        // If current temperature is at least 0.2°C higher than the average of previous 6 days
         if (currentTemp >= avgPrevTemp + 0.2) {
-            // Check if this is a sustained rise (next 2 days are also higher)
             const nextDay1 = i + 1 < sortedEntries.length ? parseFloat(sortedEntries[i + 1].temperature) : null;
             const nextDay2 = i + 2 < sortedEntries.length ? parseFloat(sortedEntries[i + 2].temperature) : null;
             
             if ((!nextDay1 || nextDay1 > avgPrevTemp) && (!nextDay2 || nextDay2 > avgPrevTemp)) {
-                // Return the date of the first temperature rise (ovulation typically occurs 1-2 days before this)
-                return new Date(sortedEntries[i - 1].date);
+                // Check for gaps in the 6 days before and 2 days after the temperature rise
+                let hasGapsNearOvulation = false;
+                
+                // Check the 6 days before the rise
+                for (let j = i - 5; j <= i; j++) {
+                    const prevDate = new Date(sortedEntries[j-1].date);
+                    const currDate = new Date(sortedEntries[j].date);
+                    const dayDiff = Math.round((currDate - prevDate) / (1000 * 60 * 60 * 24));
+                    
+                    if (dayDiff > 1) {
+                        hasGapsNearOvulation = true;
+                        break;
+                    }
+                }
+                
+                // Also check the next 2 days after the rise (if they exist in the data and are not in the future)
+                if (!hasGapsNearOvulation && i + 2 < sortedEntries.length) {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0); // Reset time to start of day for comparison
+                    
+                    const riseDate = new Date(sortedEntries[i].date);
+                    const nextDate1 = new Date(sortedEntries[i+1].date);
+                    
+                    // Only check if nextDate1 is not in the future
+                    if (nextDate1 <= today) {
+                        const dayDiff1 = Math.round((nextDate1 - riseDate) / (1000 * 60 * 60 * 24));
+                        if (dayDiff1 > 1) {
+                            hasGapsNearOvulation = true;
+                        } else if (i + 2 < sortedEntries.length) {
+                            const nextDate2 = new Date(sortedEntries[i+2].date);
+                            // Only check nextDate2 if it's not in the future
+                            if (nextDate2 <= today) {
+                                const dayDiff2 = Math.round((nextDate2 - nextDate1) / (1000 * 60 * 60 * 24));
+                                if (dayDiff2 > 1) {
+                                    hasGapsNearOvulation = true;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                return {
+                    date: new Date(sortedEntries[i - 1].date),
+                    hasGaps: hasGapsNearOvulation
+                };
             }
         }
     }
     
-    return null; // No clear ovulation detected
+    return null;
 }
 
 // Update ovulation information display
@@ -270,13 +311,18 @@ function updateOvulationInfo(entries) {
         return;
     }
     
-    const ovulationDate = calculateOvulationDate([...entries].sort((a, b) => new Date(a.date) - new Date(b.date)));
+    const result = calculateOvulationDate([...entries].sort((a, b) => new Date(a.date) - new Date(b.date)));
     
-    if (ovulationDate) {
-        ovulationInfo.innerHTML = `
-            <p><strong>Most likely previous ovulation:</strong> ${formatDate(ovulationDate.toISOString().split('T')[0])}</p>
-            <p class="info-note">Based on your temperature data. Ovulation typically occurs 1-2 days before a sustained temperature rise.</p>
-        `;
+    if (result && result.date) {
+        let message = `<p><strong>Most likely previous ovulation:</strong> ${formatDate(result.date.toISOString().split('T')[0])}</p>`;
+        
+        if (result.hasGaps) {
+            message += '<p class="info-note">Note: Your temperature data has gaps around this period. For best accuracy, record temperatures daily.</p>';
+        } else {
+            message += '<p class="info-note">Based on your temperature data. Ovulation typically occurs 1-2 days before a sustained temperature rise.</p>';
+        }
+        
+        ovulationInfo.innerHTML = message;
     } else {
         if (entries.length < 7) {
             const daysNeeded = 7 - entries.length;
