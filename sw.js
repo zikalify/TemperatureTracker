@@ -1,9 +1,8 @@
-const CACHE_NAME = 'temperature-tracker-v6';
+const CACHE_NAME = 'temperature-tracker-v7';
 const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/app.js',
-  '/styles.css',
+  'index.html',
+  'app.js',
+  'styles.css',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css',
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
   'https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js'
