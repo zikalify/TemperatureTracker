@@ -1,6 +1,6 @@
 {
   "name": "Temperature Tracker",
-  "short_name": "Temperature Tracker",
+  "short_name": "TempTrack",
   "description": "Track your daily temperature readings",
   "start_url": "/index.html",
   "display": "standalone",
