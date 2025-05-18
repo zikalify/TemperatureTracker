@@ -197,6 +197,23 @@ function getEntries() {
     return entries ? JSON.parse(entries) : [];
 }
 
+// Filter entries to only include those within the last 10 days for ovulation calculation
+function getRecentEntriesForOvulation(entries) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day
+    
+    const tenDaysAgo = new Date(today);
+    tenDaysAgo.setDate(today.getDate() - 10);
+    
+    const threeDaysFromNow = new Date(today);
+    threeDaysFromNow.setDate(today.getDate() + 3);
+    
+    return entries.filter(entry => {
+        const entryDate = new Date(entry.date);
+        return entryDate >= tenDaysAgo && entryDate <= threeDaysFromNow;
+    });
+}
+
 // Load and display entries
 function loadEntries() {
     const entries = getEntries();
@@ -204,13 +221,17 @@ function loadEntries() {
     
     if (entries.length === 0) {
         entriesList.innerHTML = '<p>No entries yet. Add your first temperature reading above.</p>';
-        updateOvulationInfo(entries);
+        updateOvulationInfo([]);
         return;
     }
     
-    // Sort entries by date (newest first)
+    // Get recent entries for ovulation calculation
+    const recentEntriesForOvulation = getRecentEntriesForOvulation(entries);
+    
+    // Sort all entries by date (newest first) for display
     const sortedEntries = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
     
+    // Display all entries
     sortedEntries.forEach(entry => {
         const entryElement = document.createElement('div');
         entryElement.className = 'entry-card';
@@ -230,7 +251,8 @@ function loadEntries() {
         entriesList.appendChild(entryElement);
     });
     
-    updateOvulationInfo(entries);
+    // Update ovulation info using only recent entries
+    updateOvulationInfo(recentEntriesForOvulation);
 }
 
 // Calculate most likely ovulation date based on temperature data
@@ -293,8 +315,32 @@ function calculateOvulationDate(entries) {
                     }
                 }
                 
+                // Return the day of the temperature drop (i-1 index is the day before the rise)
+                // If we have a significant drop before the rise, use that as ovulation day
+                let ovulationDay = i - 1; // Default to day before rise
+                
+                // If there was a significant drop (≥0.2°C below previous average) on the day before the rise,
+                // that's likely the ovulation day
+                const dayBeforeRiseTemp = parseFloat(sortedEntries[i - 1].temperature);
+                const previousAvg = previousTemps.slice(0, 5).reduce((sum, temp) => sum + temp, 0) / 5;
+                
+                if (dayBeforeRiseTemp <= previousAvg - 0.2) {
+                    ovulationDay = i - 1;
+                } else {
+                    // Otherwise, look for the most recent drop in the previous days
+                    for (let j = i - 2; j >= Math.max(0, i - 4); j--) {
+                        const currentTemp = parseFloat(sortedEntries[j].temperature);
+                        const prevTemp = j > 0 ? parseFloat(sortedEntries[j - 1].temperature) : currentTemp;
+                        
+                        if (currentTemp < prevTemp - 0.2) {
+                            ovulationDay = j;
+                            break;
+                        }
+                    }
+                }
+                
                 return {
-                    date: new Date(sortedEntries[i - 1].date),
+                    date: new Date(sortedEntries[ovulationDay].date),
                     hasGaps: hasGapsNearOvulation
                 };
             }
