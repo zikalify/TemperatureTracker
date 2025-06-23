@@ -372,6 +372,85 @@ textarea {
     line-height: 1.5;
 }
 
+/* Prediction and Confidence Styles */
+.prediction {
+    background: #f8f9fa;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin: 1rem 0;
+    border-left: 4px solid #6c757d;
+}
+
+.prediction.high {
+    border-left-color: #28a745;
+    background-color: #e8f5e9;
+}
+
+.prediction.medium {
+    border-left-color: #ffc107;
+    background-color: #fff8e1;
+}
+
+.prediction.low {
+    border-left-color: #dc3545;
+    background-color: #ffebee;
+}
+
+.prediction h3 {
+    margin-top: 0;
+    color: var(--text-color);
+    font-size: 1.2rem;
+}
+
+.prediction .date {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin: 0.5rem 0;
+    color: var(--primary-color);
+}
+
+.prediction .confidence {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin: 0.5rem 0;
+}
+
+.prediction.high .confidence {
+    background-color: #c3e6cb;
+    color: #155724;
+}
+
+.prediction.medium .confidence {
+    background-color: #ffeeba;
+    color: #856404;
+}
+
+.prediction.low .confidence {
+    background-color: #f5c6cb;
+    color: #721c24;
+}
+
+.prediction .details {
+    margin: 0.5rem 0 0;
+    color: var(--text-light);
+    font-size: 0.95rem;
+}
+
+.prediction .hint {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    font-style: italic;
+    margin-top: 0.5rem;
+}
+
+/* Temperature Validation */
+input:invalid {
+    border-color: #dc3545;
+}
+
 /* Modal Styles */
 .modal {
     display: none;
@@ -384,38 +463,55 @@ textarea {
     z-index: 1000;
     justify-content: center;
     align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 .modal-content {
-    background: white;
-    padding: 30px;
+    background-color: white;
+    padding: 2rem;
     border-radius: var(--border-radius);
-    width: 90%;
+    width: 100%;
     max-width: 500px;
     max-height: 90vh;
     overflow-y: auto;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     position: relative;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .modal h2 {
+    margin-top: 0;
     color: var(--primary-color);
-    margin-bottom: 20px;
-    font-size: 1.5em;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #eee;
 }
 
-.close {
+.modal-close {
     position: absolute;
-    top: 15px;
-    right: 20px;
-    font-size: 28px;
-    font-weight: bold;
-    color: #888;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
     cursor: pointer;
-    transition: var(--transition);
+    color: #666;
+    padding: 0.5rem;
+    line-height: 1;
 }
 
-.close:hover {
+.modal-close:hover {
     color: #333;
 }
 
@@ -438,6 +534,16 @@ textarea {
     .entry-actions button {
         width: 100%;
         justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .prediction {
+        padding: 1rem;
+    }
+    
+    .prediction .date {
+        font-size: 1.5rem;
     }
 }
 

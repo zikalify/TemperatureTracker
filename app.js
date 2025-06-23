@@ -55,7 +55,7 @@ function updateTempInputs() {
         tempInput.value = formatTemperature(tempInput.value, false);
     }
     
-    if (editTempInput.value) {
+    if (editTempInput && editTempInput.value) {
         editTempInput.value = formatTemperature(editTempInput.value, false);
     }
 }
@@ -156,45 +156,194 @@ document.addEventListener('DOMContentLoaded', () => {
 // Event Listeners
 tempForm.addEventListener('submit', handleFormSubmit);
 
-document.getElementById('cancelEdit').addEventListener('click', () => {
-    document.getElementById('editModal').style.display = 'none';
+// Modal handling
+const editModal = document.getElementById('editModal');
+const modalClose = document.querySelector('.modal-close');
+const cancelEdit = document.getElementById('cancelEdit');
+
+// Show modal with animation
+function showModal() {
+    editModal.style.display = 'flex';
+    // Trigger reflow to enable animation
+    void editModal.offsetWidth;
+    editModal.classList.add('active');
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+}
+
+// Hide modal with animation
+function hideModal() {
+    editModal.classList.remove('active');
+    // Wait for animation to complete before hiding
+    setTimeout(() => {
+        editModal.style.display = 'none';
+        // Restore body scroll
+        document.body.style.overflow = '';
+    }, 200);
+}
+
+// Close modal when clicking the X button
+if (modalClose) {
+    modalClose.addEventListener('click', hideModal);
+}
+
+// Close modal when clicking cancel button
+if (cancelEdit) {
+    cancelEdit.addEventListener('click', hideModal);
+}
+
+// Close modal when clicking outside the modal content
+editModal.addEventListener('click', (e) => {
+    if (e.target === editModal) {
+        hideModal();
+    }
 });
 
-document.querySelector('.close').addEventListener('click', () => {
-    document.getElementById('editModal').style.display = 'none';
+// Close modal with Escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && editModal.style.display === 'flex') {
+        hideModal();
+    }
 });
+
+// Update the showEditModal function to use the new showModal
+function showEditModal(entry) {
+    console.log('Opening edit modal for entry:', entry); // Debug log
+    
+    const editId = document.getElementById('editId');
+    const editTemperature = document.getElementById('editTemperature');
+    const editNotes = document.getElementById('editNotes');
+    const editFever = document.getElementById('editFever');
+    
+    // Verify all elements exist
+    if (!editId || !editTemperature || !editNotes || !editFever) {
+        console.error('Modal form elements not found');
+        return;
+    }
+    
+    editId.value = entry.id;
+    
+    // Convert the stored Celsius temperature to the current display unit
+    const currentUnit = getCurrentUnit();
+    const displayTemp = currentUnit === 'C' ? entry.temperature : celsiusToFahrenheit(entry.temperature);
+    editTemperature.value = Math.round(displayTemp * 10) / 10; // Round to 1 decimal place
+    
+    editNotes.value = entry.notes || '';
+    editFever.checked = entry.fever || false;
+    
+    console.log('Modal populated with values:', {
+        id: editId.value,
+        temp: editTemperature.value,
+        notes: editNotes.value,
+        fever: editFever.checked
+    });
+    
+    // Show the modal after setting values
+    showModal();
+}
+
+// Get device's current date in YYYY-MM-DD format
+// Uses the device's local timezone
+function getCurrentLocalDate() {
+    const now = new Date();
+    // Use the device's local timezone
+    return now.toISOString().split('T')[0];
+}
+
+/**
+ * Convert date string to local date object
+ * @param {string} dateStr - Date string in YYYY-MM-DD format
+ * @returns {Date} Date object in local timezone
+ */
+function parseLocalDate(dateStr) {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    // Create date in local timezone
+    return new Date(year, month - 1, day);
+}
+
+/**
+ * Calculate days between two dates (local timezone)
+ * @param {Date} date1 - First date
+ * @param {Date} date2 - Second date
+ * @returns {number} Number of days between dates
+ */
+function daysBetween(date1, date2) {
+    const oneDay = 24 * 60 * 60 * 1000; // hours*minutes*seconds*milliseconds
+    const diffDays = Math.round(Math.abs((date1 - date2) / oneDay));
+    return diffDays;
+}
+
+/**
+ * Validate temperature value is within reasonable range
+ * @param {number} temp - Temperature in Celsius
+ * @param {string} unit - 'C' or 'F'
+ * @returns {boolean} True if temperature is valid
+ */
+function isValidTemperature(temp, unit) {
+    if (isNaN(temp)) return false;
+    
+    // Convert to Celsius for comparison
+    const tempC = unit === 'F' ? (temp - 32) * 5/9 : temp;
+    
+    // Reasonable range: 35°C to 42°C (95°F to 107.6°F)
+    return tempC >= 35 && tempC <= 42;
+}
 
 // Handle form submission
 function handleFormSubmit(e) {
     e.preventDefault();
     
-    const date = document.getElementById('date').value;
-    const temperature = getTempForStorage(document.getElementById('temperature').value);
+    const dateInput = document.getElementById('date');
+    const tempInput = document.getElementById('temperature');
     const notes = document.getElementById('notes').value;
+    const fever = document.getElementById('fever').checked;
+    
+    // Validate date is not in the future
+    const today = new Date();
+    const selectedDate = new Date(dateInput.value);
+    if (selectedDate > today) {
+        alert('Cannot add entries for future dates');
+        return;
+    }
+    
+    // Validate temperature
+    const temp = parseFloat(tempInput.value);
+    if (!isValidTemperature(temp, getCurrentUnit())) {
+        alert('Please enter a valid temperature between 35°C-42°C (95°F-107.6°F)');
+        return;
+    }
+    
+    const temperature = getTempForStorage(temp);
     
     const entry = {
         id: Date.now().toString(),
-        date,
+        date: dateInput.value,
         temperature,
-        notes
+        notes,
+        fever,
+        // Store the timezone offset in minutes
+        timezoneOffset: new Date().getTimezoneOffset()
     };
     
     saveEntry(entry);
     tempForm.reset();
-    document.getElementById('date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('fever').checked = false;
+    dateInput.value = getCurrentLocalDate();
 }
 
 // Save entry to local storage
 function saveEntry(entry) {
     const entries = getEntries();
     const existingIndex = entries.findIndex(e => e.date === entry.date);
-    
+
     if (existingIndex >= 0) {
+        // Preserve the original id
+        entry.id = entries[existingIndex].id;
         entries[existingIndex] = entry;
     } else {
         entries.push(entry);
     }
-    
+
     localStorage.setItem('temperatureEntries', JSON.stringify(entries));
     loadEntries();
 }
@@ -227,19 +376,19 @@ function loadEntries() {
     // Sort all entries by date (newest first) for display
     const sortedEntries = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
     
-    // Display all entries
     sortedEntries.forEach(entry => {
         const entryElement = document.createElement('div');
         entryElement.className = 'entry-card';
         entryElement.innerHTML = `
             <div class="entry-date">${formatDate(entry.date)}</div>
             <div class="entry-temp">${formatTemperature(entry.temperature)}</div>
+            ${entry.fever ? '<div class="fever-flag">🤒 Fever/Illness</div>' : ''}
             ${entry.notes ? `<div class="entry-notes">${entry.notes}</div>` : ''}
             <div class="entry-actions">
-                <button onclick="editEntry('${entry.id}')">
+                <button type="button" onclick="handleEditClick(event, '${entry.id}')">
                     <i class="fas fa-edit"></i> Edit
                 </button>
-                <button onclick="deleteEntry('${entry.id}')" class="danger">
+                <button type="button" onclick="deleteEntry('${entry.id}')" class="danger">
                     <i class="fas fa-trash"></i> Delete
                 </button>
             </div>
@@ -248,110 +397,252 @@ function loadEntries() {
     });
     
     // Update ovulation info using only recent entries
-    updateOvulationInfo(recentEntriesForOvulation);
+    updateOvulationInfo(entries);
 }
 
-// Calculate most likely ovulation date based on temperature data using strict 3-over-6 rule
+// Helper function to get entries within a date range, excluding fever readings
+function getEntriesInRange(entries, startDate, endDate) {
+    return entries
+        .filter(entry => {
+            const entryDate = new Date(entry.date);
+            return !entry.fever && 
+                   entryDate >= startDate && 
+                   entryDate <= endDate;
+        })
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+}
+
+// Calculate most likely ovulation date based on temperature data using flexible 3-over-6 rule
 function calculateOvulationDate(entries) {
-    if (!entries || entries.length < 9) { // Need at least 9 days (6 for average + 3 for rise)
-        return null;
+    if (!entries || entries.length < 6) {
+        return { date: null, confidence: 'low', message: 'Insufficient data' };
     }
 
-    // Sort entries by date (oldest first)
-    const sortedEntries = [...entries].sort((a, b) => new Date(a.date) - new Date(b.date));
-    let mostRecentOvulationDay = null;
+    const sortedEntries = [...entries]
+        .filter(entry => !entry.fever)
+        .sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
     
-    // Start from the 9th day to have enough history (6 days) + 3 days for the rise
-    for (let i = 8; i < sortedEntries.length; i++) {
-        // Check if we have consecutive days
-        // This checks the 9-day window: 3 rise days (i, i-1, i-2) and 6 baseline days (i-3 to i-8)
-        let hasConsecutiveDays = true;
-        for (let j = 0; j < 8; j++) {
-            const currentDate = new Date(sortedEntries[i - j].date);
-            // Since i >= 8 and j <= 7, i-j-1 >= 0, so sortedEntries[i-j-1] is always a valid access.
-            const prevDate = new Date(sortedEntries[i - j - 1].date);
-            const dayDiff = (currentDate - prevDate) / (1000 * 60 * 60 * 24);
+    const today = new Date();
+    const lookbackDays = 30; // Increased from 21 to 30 days for more flexibility
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - lookbackDays);
+    
+    // Get valid entries within date range
+    const validEntries = sortedEntries.filter(entry => {
+        const entryDate = parseLocalDate(entry.date);
+        return entryDate >= startDate && entryDate <= today;
+    });
+    
+    if (validEntries.length < 6) {
+        return { 
+            date: null, 
+            confidence: 'low', 
+            message: `Need at least 6 valid readings (have ${validEntries.length})` 
+        };
+    }
+    
+    let bestOvulationDay = null;
+    let bestConfidence = 'low';
+    
+    // Check for 3-over-6 pattern in a sliding window
+    for (let i = 6; i < validEntries.length - 2; i++) {
+        const sixDays = validEntries.slice(i - 6, i);
+        const threeDays = validEntries.slice(i, i + 3);
+        
+        // Calculate gaps between first and last day of the 9-day window
+        const firstDay = parseLocalDate(sixDays[0].date);
+        const lastDay = parseLocalDate(threeDays[2].date);
+        const totalDays = daysBetween(firstDay, lastDay);
+        
+        // Skip if the pattern is too spread out
+        if (totalDays > 14) continue;
+        
+        const sixDayAvg = sixDays.reduce((sum, entry) => sum + entry.temperature, 0) / 6;
+        
+        // Check if next 3 days are all above the average
+        const isRise = threeDays.every(day => day.temperature > sixDayAvg + 0.2);
+        
+        if (isRise) {
+            const ovulationDate = parseLocalDate(validEntries[i - 1].date);
+            // Calculate confidence based on data quality
+            const confidence = calculateConfidence(sixDays, threeDays, sixDayAvg);
             
-            // Allow for slight variations around a 1-day difference (e.g., DST changes)
-            // but consider a difference greater than 1.1 days (approx 26.4 hours) as a gap.
-            // A 2-day gap would be dayDiff = 2.
-            if (dayDiff > 1.1 || dayDiff < 0.9 && dayDiff !== 0) { // Also check for non-zero small fractions if dates are not perfectly midnight
-                hasConsecutiveDays = false;
-                break;
-            }
-        }
-        
-        if (!hasConsecutiveDays) continue;
-        
-        // Get the 6 temperatures for the baseline.
-        // The 3-day rise consists of: sortedEntries[i-2] (H1), sortedEntries[i-1] (H2), sortedEntries[i] (H3).
-        // The 6 baseline temperatures are those immediately preceding H1:
-        // sortedEntries[i-3], sortedEntries[i-4], ..., sortedEntries[i-8].
-        const previousSixTemps = [];
-        for (let k = 0; k < 6; k++) {
-            // Accesses sortedEntries[i-3] down to sortedEntries[i-8]
-            previousSixTemps.push(parseFloat(sortedEntries[i - 3 - k].temperature));
-        }
-        
-        // Calculate average of previous 6 days
-        const avgPrevSix = previousSixTemps.reduce((sum, temp) => sum + temp, 0) / 6;
-
-        // Check next 3 days are all at least 0.2°C above the 6-day average
-        let isOvulationPattern = true;
-        for (let j = 0; j < 3; j++) {
-            const currentTemp = parseFloat(sortedEntries[i - j].temperature);
-            if (currentTemp <= avgPrevSix + 0.2) {
-                isOvulationPattern = false;
-                break;
-            }
-        }
-        
-        if (isOvulationPattern) {
-            // The ovulation day is the day before the 3-day rise starts
-            const ovulationDate = new Date(sortedEntries[i - 3].date);
-            
-            // Only update if this is the most recent ovulation found
-            if (!mostRecentOvulationDay || ovulationDate > mostRecentOvulationDay) {
-                mostRecentOvulationDay = ovulationDate;
+            // Update best match if this one has higher confidence
+            if (!bestOvulationDay || confidence.level > bestConfidence.level) {
+                bestOvulationDay = ovulationDate;
+                bestConfidence = confidence;
             }
         }
     }
     
-    return mostRecentOvulationDay;
+    return {
+        date: bestOvulationDay,
+        confidence: bestConfidence.level,
+        message: bestOvulationDay ? 
+            `Ovulation detected with ${bestConfidence.level} confidence` :
+            'No clear ovulation pattern detected'
+    };
 }
 
-// Update ovulation information display
-function updateOvulationInfo(entries) {
-    const minDaysRequired = 9; // Consistent with calculateOvulationDate
+/**
+ * Calculate confidence level of ovulation detection
+ */
+function calculateConfidence(sixDays, threeDays, sixDayAvg) {
+    // Count how many of the 3 days are significantly above the average
+    const significantRiseCount = threeDays
+        .filter(day => day.temperature > sixDayAvg + 0.3)
+        .length;
+    
+    // Calculate temperature stability in baseline
+    const baselineTemps = sixDays.map(day => day.temperature);
+    const baselineStability = calculateStability(baselineTemps);
+    
+    // Calculate rise consistency
+    const riseAmounts = threeDays.map(day => day.temperature - sixDayAvg);
+    const riseConsistency = calculateStability(riseAmounts);
+    
+    // Determine confidence level
+    if (significantRiseCount >= 2 && baselineStability < 0.2 && riseConsistency < 0.3) {
+        return { level: 'high', details: 'Strong temperature shift with stable baseline' };
+    } else if (significantRiseCount >= 1 && baselineStability < 0.3) {
+        return { level: 'medium', details: 'Moderate temperature shift' };
+    }
+    
+    return { level: 'low', details: 'Weak or inconsistent temperature pattern' };
+}
 
-    if (!entries || entries.length === 0) {
-        ovulationInfo.innerHTML = `<p>Add at least ${minDaysRequired} days of temperature data to estimate your ovulation date.</p>`;
-        return;
-    }
+/**
+ * Calculate stability of temperature readings (lower is more stable)
+ */
+function calculateStability(readings) {
+    if (readings.length < 2) return 0;
     
+    const avg = readings.reduce((a, b) => a + b, 0) / readings.length;
+    const squareDiffs = readings.map(x => Math.pow(x - avg, 2));
+    const variance = squareDiffs.reduce((a, b) => a + b, 0) / readings.length;
+    return Math.sqrt(variance); // standard deviation
+}
+
+// Update the UI to show confidence information
+function updateOvulationInfo(entries) {
     const result = calculateOvulationDate(entries);
+    const ovulationInfo = document.getElementById('ovulationInfo');
     
-    if (result) {
-        let message = `<p><strong>Most likely previous ovulation:</strong> ${formatDate(result.toISOString().split('T')[0])}</p>`;
-        
-        message += '<p class="info-note">Based on your temperature data. Ovulation typically occurs 1-2 days before a sustained temperature rise.</p>';
-        
-        ovulationInfo.innerHTML = message;
+    if (result.date) {
+        const formattedDate = formatDate(result.date.toISOString().split('T')[0]);
+        ovulationInfo.innerHTML = `
+            <div class="prediction ${result.confidence}">
+                <h3>Most Likely Ovulation Date</h3>
+                <p class="date">${formattedDate}</p>
+                <p class="confidence">Confidence: ${result.confidence}</p>
+                <p class="details">${result.message}</p>
+            </div>
+        `;
     } else {
-        // No ovulation pattern detected or not enough data
-        if (entries.length < minDaysRequired) {
-            const daysNeeded = minDaysRequired - entries.length;
-            ovulationInfo.innerHTML = `
-                <p>Not enough data to estimate ovulation. Add ${daysNeeded} more day${daysNeeded > 1 ? 's' : ''} of temperature data.</p><p class="info-note">At least ${minDaysRequired} consecutive days of readings are needed for this calculation.</p>
-            `;
-        } else {
-            // Sufficient data (>= minDaysRequired) but no pattern found
-            ovulationInfo.innerHTML = `
-                <p>No clear ovulation pattern detected in your temperature data.</p>
-                <p class="info-note">Keep tracking your temperature daily. The algorithm looks for a sustained temperature rise of over 0.2°C for 3 days, compared to the average of the 6 preceding days.</p>
-            `;
-        }
+        ovulationInfo.innerHTML = `
+            <div class="prediction">
+                <p>${result.message}</p>
+                <p class="hint">Track your temperature daily for more accurate predictions.</p>
+            </div>
+        `;
     }
+}
+
+// Handle edit form submission - FIXED VERSION
+document.getElementById('editForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    e.stopPropagation(); // Prevent event bubbling
+    
+    console.log('Edit form submitted'); // Debug log
+    
+    const id = document.getElementById('editId').value;
+    let tempInput = document.getElementById('editTemperature').value.trim();
+    const notes = document.getElementById('editNotes').value;
+    const fever = document.getElementById('editFever').checked;
+    
+    console.log('Form values:', { id, tempInput, notes, fever }); // Debug log
+    
+    // Validate temperature input
+    if (!tempInput || tempInput === '') {
+        alert('Please enter a temperature');
+        return false;
+    }
+    
+    // Convert the input temperature to a number and ensure proper conversion
+    let temperature = parseFloat(tempInput.replace(',', '.')); // Handle both comma and dot decimal separators
+    if (isNaN(temperature)) {
+        alert('Please enter a valid temperature');
+        return false;
+    }
+    
+    // Validate temperature range before conversion
+    const currentUnit = getCurrentUnit();
+    if (!isValidTemperature(temperature, currentUnit)) {
+        const range = currentUnit === 'C' ? '35°C-42°C' : '95°F-107.6°F';
+        alert(`Please enter a valid temperature between ${range}`);
+        return false;
+    }
+    
+    // Convert to Celsius if we're in Fahrenheit mode
+    if (currentUnit === 'F') {
+        temperature = fahrenheitToCelsius(temperature);
+    }
+    
+    // Round to one decimal place for consistency
+    temperature = Math.round(temperature * 10) / 10;
+    
+    console.log('Processed temperature:', temperature); // Debug log
+    
+    try {
+        const entries = getEntries();
+        const index = entries.findIndex(e => e.id === id);
+        
+        console.log('Entry index found:', index); // Debug log
+        
+        if (index !== -1) {
+            // Update the entry
+            entries[index].temperature = temperature;
+            entries[index].notes = notes;
+            entries[index].fever = fever;
+            
+            // Save to localStorage
+            localStorage.setItem('temperatureEntries', JSON.stringify(entries));
+            
+            console.log('Entry updated and saved'); // Debug log
+            
+            // Reload the entries display
+            loadEntries();
+            
+            // Hide the modal after successful save
+            hideModal();
+            
+            // Show success message
+            console.log('Temperature updated successfully');
+        } else {
+            alert('Error: Entry not found');
+            console.error('Entry with id not found:', id);
+        }
+    } catch (error) {
+        console.error('Error updating entry:', error);
+        alert('Error updating entry. Please try again.');
+    }
+    
+    return false; // Ensure form doesn't submit normally
+});
+
+// Delete entry
+function deleteEntry(id) {
+    if (confirm('Are you sure you want to delete this entry?')) {
+        const entries = getEntries().filter(entry => entry.id !== id);
+        localStorage.setItem('temperatureEntries', JSON.stringify(entries));
+        loadEntries();
+    }
+}
+
+// Helper function to format date as "DD MMM YYYY"
+function formatDate(dateString) {
+    const options = { day: '2-digit', month: 'short', year: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-US', options);
 }
 
 // Helper function to update date display
@@ -370,55 +661,6 @@ function updateDateDisplay(inputElement, displayElement) {
     displayElement.textContent = date.toLocaleDateString('en-US', options);
 }
 
-// Edit entry
-function editEntry(id) {
-    const entries = getEntries();
-    const entry = entries.find(e => e.id === id);
-    
-    if (entry) {
-        document.getElementById('editId').value = entry.id;
-        document.getElementById('editDate').value = entry.date;
-        document.getElementById('editTemperature').value = formatTemperature(entry.temperature, false);
-        document.getElementById('editNotes').value = entry.notes || '';
-        document.getElementById('editModal').style.display = 'block';
-    }
-}
-
-// Handle edit form submission
-document.getElementById('editForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const id = document.getElementById('editId').value;
-    const date = document.getElementById('editDate').value;
-    const temperature = getTempForStorage(document.getElementById('editTemperature').value);
-    const notes = document.getElementById('editNotes').value;
-    
-    const entries = getEntries();
-    const index = entries.findIndex(e => e.id === id);
-    
-    if (index !== -1) {
-        entries[index] = { ...entries[index], date, temperature, notes };
-        localStorage.setItem('temperatureEntries', JSON.stringify(entries));
-        loadEntries();
-        document.getElementById('editModal').style.display = 'none';
-    }
-});
-
-// Delete entry
-function deleteEntry(id) {
-    if (confirm('Are you sure you want to delete this entry?')) {
-        const entries = getEntries().filter(entry => entry.id !== id);
-        localStorage.setItem('temperatureEntries', JSON.stringify(entries));
-        loadEntries();
-    }
-}
-
-// Helper function to format date as "DD MMM YYYY"
-function formatDate(dateString) {
-    const options = { day: '2-digit', month: 'short', year: 'numeric' };
-    return new Date(dateString).toLocaleDateString('en-US', options);
-}
-
 // Register Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -430,4 +672,33 @@ if ('serviceWorker' in navigator) {
                 console.log('ServiceWorker registration failed: ', err);
             });
     });
+}
+
+// Add some CSS for the fever flag
+const style = document.createElement('style');
+style.textContent = `
+    .fever-flag {
+        color: #e53935;
+        font-weight: 500;
+        margin: 5px 0;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .fever-flag::before {
+        content: "🤒";
+        font-size: 1.2em;
+    }
+`;
+document.head.appendChild(style);
+
+// Add this new function to handle edit button clicks
+function handleEditClick(event, id) {
+    event.preventDefault();
+    const entries = getEntries();
+    const entry = entries.find(e => e.id === id);
+    if (entry) {
+        showEditModal(entry);
+    }
 }
