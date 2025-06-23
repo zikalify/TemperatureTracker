@@ -446,8 +446,11 @@ function handleFormSubmit(e) {
     
     // Validate date is not in the future
     const today = new Date();
+    const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const selectedDate = new Date(dateInput.value);
-    if (selectedDate > today) {
+    const selectedDateLocal = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+    
+    if (selectedDateLocal > todayLocal) {
         alert('Cannot add entries for future dates');
         return;
     }
@@ -807,7 +810,9 @@ function importFromCSV(file) {
                         date,
                         temperature: temp,
                         notes: notes || '',
-                        timestamp: existingEntryMap.has(date) ? existingEntryMap.get(date).timestamp : new Date().toISOString(),
+                        timestamp: existingEntryMap.has(date) 
+                            ? existingEntryMap.get(date).timestamp 
+                            : new Date().toISOString(),
                         // Preserve fever status for existing entries, detect for new entries
                         fever: existingEntryMap.has(date) 
                             ? existingEntryMap.get(date).fever 
