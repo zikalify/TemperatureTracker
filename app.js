@@ -382,7 +382,7 @@ function loadEntries() {
         entryElement.innerHTML = `
             <div class="entry-date">${formatDate(entry.date)}</div>
             <div class="entry-temp">${formatTemperature(entry.temperature)}</div>
-            ${entry.fever ? '<div class="fever-flag">🤒 Fever/Illness</div>' : ''}
+            ${entry.fever ? '<div class="fever-flag">Fever/Illness</div>' : ''}
             ${entry.notes ? `<div class="entry-notes">${entry.notes}</div>` : ''}
             <div class="entry-actions">
                 <button type="button" onclick="handleEditClick(event, '${entry.id}')">
