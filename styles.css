@@ -749,14 +749,15 @@ input:focus:invalid {
     box-shadow: var(--shadow);
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.5);
+    text-align: center;
+    padding: 25px 0 0;
     margin-bottom: 30px;
 }
 
 .backup-header {
-    padding: 20px 25px;
+    padding: 0 25px 20px;
     background: var(--surface);
-    border-bottom: none;
-    text-align: center;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .backup-header h2 {
@@ -764,11 +765,13 @@ input:focus:invalid {
     font-size: 1.5em;
     margin: 0;
     font-weight: 600;
+    white-space: nowrap;
+    width: 100%;
     text-align: center;
 }
 
 .backup-options {
-    padding: 25px;
+    padding: 0 25px 25px;
 }
 
 .backup-actions {
