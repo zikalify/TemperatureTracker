@@ -97,17 +97,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     const today = new Date();
-    const formattedDate = today.toISOString().split('T')[0];
+    // Format the date in YYYY-MM-DD format using local time
+    const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     const dateInput = document.getElementById('date');
     const dateDisplay = document.getElementById('dateDisplay');
     
     if (dateInput && dateDisplay) {
+        // Set the max attribute to today's date to prevent future date selection
+        dateInput.max = formattedDate;
         dateInput.value = formattedDate;
         // Format the initial display
         updateDateDisplay(dateInput, dateDisplay);
         
         // Add event listener for date changes
         dateInput.addEventListener('change', (e) => {
+            // If somehow a future date is still selected (e.g., via manual input), reset to today
+            const selectedDate = new Date(e.target.value);
+            if (selectedDate > today) {
+                e.target.value = formattedDate;
+            }
             updateDateDisplay(e.target, dateDisplay);
         });
     }
