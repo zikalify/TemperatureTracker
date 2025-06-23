@@ -74,12 +74,12 @@ header p {
     box-shadow: var(--shadow);
     margin-bottom: 30px;
     border: 1px solid rgba(255, 255, 255, 0.5);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: box-shadow 0.3s ease;
 }
 
 .temperature-form:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow);
+    transform: none;
 }
 
 .temperature-form h2 {
@@ -252,6 +252,7 @@ textarea {
     border: 1px solid rgba(255, 255, 255, 0.5);
     text-align: center;
     padding: 25px 0 0;
+    margin-bottom: 30px;
 }
 
 .entries-header {
@@ -741,6 +742,67 @@ input:focus:invalid {
     }
 }
 
+/* Backup Section */
+.backup-section {
+    background: var(--surface);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    margin-bottom: 30px;
+}
+
+.backup-header {
+    padding: 20px 25px;
+    background: var(--surface);
+    border-bottom: none;
+    text-align: center;
+}
+
+.backup-header h2 {
+    color: var(--primary-dark);
+    font-size: 1.5em;
+    margin: 0;
+    font-weight: 600;
+    text-align: center;
+}
+
+.backup-options {
+    padding: 25px;
+}
+
+.backup-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+}
+
+.backup-actions .btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 200px;
+    max-width: 100%;
+}
+
+.backup-actions .btn i {
+    color: white;
+}
+
+.backup-actions .btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: none;
+}
+
 /* Empty State */
 .empty-state {
     text-align: center;
@@ -794,4 +856,11 @@ input:focus:invalid {
 
 .loading {
     animation: pulse 1.5s infinite ease-in-out;
+}
+
+/* Center the save button in the form */
+#tempForm button[type="submit"] {
+    display: block;
+    margin: 0 auto;
+    min-width: 200px;
 }

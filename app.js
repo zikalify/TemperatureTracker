@@ -709,6 +709,181 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+// Export entries to CSV
+function exportToCSV() {
+    const entries = getEntries();
+    if (entries.length === 0) {
+        alert('No entries to export');
+        return;
+    }
+
+    // Convert entries to CSV format
+    const headers = ['Date', 'Temperature (°C)', 'Notes'];
+    const csvRows = [
+        headers.join(','),
+        ...entries.map(entry => {
+            const date = entry.date;
+            const temp = entry.temperature.toFixed(2);
+            const notes = `"${(entry.notes || '').replace(/"/g, '""')}"`; // Escape quotes in notes
+            return [date, temp, notes].join(',');
+        })
+    ];
+
+    const csvContent = csvRows.join('\n');
+    
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `temperature-tracker-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Import entries from CSV
+function importFromCSV(file) {
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        try {
+            const text = e.target.result;
+            const lines = text.split('\n');
+            const headers = lines[0].split(',').map(h => h.trim());
+            
+            // Validate CSV format
+            if (headers.length < 2 || 
+                !headers.some(h => h.toLowerCase().includes('date')) ||
+                !headers.some(h => h.toLowerCase().includes('temperature'))) {
+                throw new Error('Invalid CSV format. Please use the exported CSV file format.');
+            }
+            
+            // Get existing entries
+            const existingEntries = getEntries();
+            const existingEntryMap = new Map(existingEntries.map(entry => [entry.date, entry]));
+            let importedCount = 0;
+            let skippedCount = 0;
+            
+            // Process each line
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                
+                try {
+                    // Simple CSV parsing (won't handle all edge cases, but works for our format)
+                    const values = [];
+                    let current = '';
+                    let inQuotes = false;
+                    
+                    for (let j = 0; j < lines[i].length; j++) {
+                        const char = lines[i][j];
+                        if (char === '"' && (j === 0 || lines[i][j-1] !== '\\')) {
+                            inQuotes = !inQuotes;
+                        } else if (char === ',' && !inQuotes) {
+                            values.push(current);
+                            current = '';
+                        } else {
+                            current += char;
+                        }
+                    }
+                    values.push(current);
+                    
+                    if (values.length < 2) continue;
+                    
+                    // Extract values (assuming format: date, temperature, notes)
+                    const date = values[0].trim();
+                    const temp = parseFloat(values[1].trim());
+                    const notes = values.length > 2 ? values[2].trim().replace(/^"|"$/g, '') : '';
+                    
+                    // Validate date and temperature
+                    if (!date || isNaN(temp) || !isValidDate(date)) continue;
+                    
+                    // Create or update entry
+                    const entry = {
+                        id: existingEntryMap.has(date) ? existingEntryMap.get(date).id : Date.now() + Math.random().toString(36).substr(2, 9),
+                        date,
+                        temperature: temp,
+                        notes: notes || '',
+                        timestamp: existingEntryMap.has(date) ? existingEntryMap.get(date).timestamp : new Date().toISOString(),
+                        // Preserve fever status for existing entries, detect for new entries
+                        fever: existingEntryMap.has(date) 
+                            ? existingEntryMap.get(date).fever 
+                            : temp >= 38.0 // Mark as fever if temperature is 38.0°C or higher
+                    };
+                    
+                    saveEntry(entry);
+                    importedCount++;
+                    
+                } catch (error) {
+                    console.error('Error processing line:', lines[i], error);
+                    skippedCount++;
+                }
+            }
+            
+            // Reload entries and show success message
+            loadEntries();
+            
+            let message = `Successfully imported ${importedCount} entries.`;
+            if (skippedCount > 0) {
+                message += ` ${skippedCount} entries were skipped due to errors.`;
+            }
+            alert(message);
+            
+        } catch (error) {
+            console.error('Error importing CSV:', error);
+            alert(`Error importing CSV: ${error.message}`);
+        }
+    };
+    
+    reader.onerror = function() {
+        alert('Error reading file');
+    };
+    
+    reader.readAsText(file);
+}
+
+// Helper function to validate date format (YYYY-MM-DD)
+function isValidDate(dateString) {
+    const regEx = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateString.match(regEx)) return false;
+    const d = new Date(dateString);
+    return !isNaN(d.getTime()) && d.toISOString().slice(0,10) === dateString;
+}
+
+// Initialize backup functionality
+document.addEventListener('DOMContentLoaded', () => {
+    // Previous initialization code...
+    
+    // Initialize backup buttons
+    const exportBtn = document.getElementById('exportBtn');
+    const importBtn = document.getElementById('importBtn');
+    const importFile = document.getElementById('importFile');
+    
+    if (exportBtn) {
+        exportBtn.addEventListener('click', exportToCSV);
+    }
+    
+    if (importBtn && importFile) {
+        importBtn.addEventListener('click', () => importFile.click());
+        
+        importFile.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (confirm('Importing will add new entries and update existing ones. Continue?')) {
+                    importFromCSV(file);
+                }
+            }
+            // Reset the file input to allow importing the same file again
+            e.target.value = '';
+        });
+    }
+    
+    // Rest of the initialization code...
+});
+
 // Add some CSS for the fever flag
 const style = document.createElement('style');
 style.textContent = `
