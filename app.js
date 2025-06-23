@@ -1,3 +1,84 @@
+// Make handleEditClick globally available
+window.handleEditClick = function(event, id) {
+    event.stopPropagation();
+    event.preventDefault();
+    const entries = getEntries();
+    const entry = entries.find(e => e.id === id);
+    if (entry) {
+        // Check if showEditModal is available
+        if (typeof window.showEditModal === 'function') {
+            window.showEditModal(entry);
+        } else {
+            console.error('showEditModal function not found');
+            // Try to initialize the modal if it's not available
+            initializeModal();
+            if (typeof window.showEditModal === 'function') {
+                window.showEditModal(entry);
+            } else {
+                alert('Error: Could not initialize edit form');
+            }
+        }
+    } else {
+        console.error('Entry not found:', id);
+        alert('Error: Entry not found');
+    }
+};
+
+// Initialize modal and related functions when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Make showEditModal globally available
+    window.showEditModal = function(entry) {
+        const editId = document.getElementById('editId');
+        const editDate = document.getElementById('editDate');
+        const editTemperature = document.getElementById('editTemperature');
+        const editNotes = document.getElementById('editNotes');
+        
+        if (!editId || !editDate || !editTemperature || !editNotes) {
+            console.error('Required form elements not found');
+            // Try to initialize the modal again
+            initializeModal();
+            // Try to get the elements again
+            const editId = document.getElementById('editId');
+            const editDate = document.getElementById('editDate');
+            const editTemperature = document.getElementById('editTemperature');
+            const editNotes = document.getElementById('editNotes');
+            
+            if (!editId || !editDate || !editTemperature || !editNotes) {
+                console.error('Still could not find required form elements');
+                return;
+            }
+        }
+        
+        // Set form values
+        editId.value = entry.id;
+        editDate.value = entry.date;
+        
+        // Display temperature in the current unit
+        const currentUnit = getCurrentUnit();
+        const displayTemp = currentUnit === 'C' ? entry.temperature : celsiusToFahrenheit(entry.temperature);
+        editTemperature.value = displayTemp.toFixed(1);
+        
+        editNotes.value = entry.notes || '';
+        
+        // Show the modal
+        showModal();
+    };
+    
+    // Initialize modal
+    function initializeModal() {
+        // Make sure modal elements exist
+        const modal = document.getElementById('editModal');
+        if (!modal) {
+            console.error('Edit modal not found in the DOM');
+            return false;
+        }
+        return true;
+    }
+    
+    // Initialize the modal when the page loads
+    initializeModal();
+});
+
 // DOM Elements
 const tempForm = document.getElementById('tempForm');
 const entriesList = document.getElementById('entriesList');
@@ -206,40 +287,106 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Update the showEditModal function to use the new showModal
-function showEditModal(entry) {
-    console.log('Opening edit modal for entry:', entry); // Debug log
+// Update the edit form submission handler
+document.getElementById('editForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
     
-    const editId = document.getElementById('editId');
-    const editTemperature = document.getElementById('editTemperature');
-    const editNotes = document.getElementById('editNotes');
-    const editFever = document.getElementById('editFever');
+    const id = document.getElementById('editId').value;
+    const dateInput = document.getElementById('editDate').value;
+    let tempInput = document.getElementById('editTemperature').value.trim();
+    const notes = document.getElementById('editNotes').value;
     
-    // Verify all elements exist
-    if (!editId || !editTemperature || !editNotes || !editFever) {
-        console.error('Modal form elements not found');
-        return;
+    // Validate temperature input
+    if (!tempInput || tempInput === '') {
+        alert('Please enter a temperature');
+        return false;
     }
     
-    editId.value = entry.id;
+    // Convert the input temperature to a number and ensure proper conversion
+    let temperature = parseFloat(tempInput.replace(',', '.')); // Handle both comma and dot decimal separators
+    if (isNaN(temperature)) {
+        alert('Please enter a valid temperature');
+        return false;
+    }
     
-    // Convert the stored Celsius temperature to the current display unit
+    // Validate temperature range before conversion
     const currentUnit = getCurrentUnit();
-    const displayTemp = currentUnit === 'C' ? entry.temperature : celsiusToFahrenheit(entry.temperature);
-    editTemperature.value = Math.round(displayTemp * 10) / 10; // Round to 1 decimal place
+    if (!isValidTemperature(temperature, currentUnit)) {
+        const range = currentUnit === 'C' ? '35°C-42°C' : '95°F-107.6°F';
+        alert(`Please enter a valid temperature between ${range}`);
+        return false;
+    }
     
-    editNotes.value = entry.notes || '';
-    editFever.checked = entry.fever || false;
+    // Convert to Celsius if we're in Fahrenheit mode
+    if (currentUnit === 'F') {
+        temperature = fahrenheitToCelsius(temperature);
+    }
     
-    console.log('Modal populated with values:', {
-        id: editId.value,
-        temp: editTemperature.value,
-        notes: editNotes.value,
-        fever: editFever.checked
-    });
+    // Round to one decimal place for consistency
+    temperature = Math.round(temperature * 10) / 10;
     
-    // Show the modal after setting values
-    showModal();
+    // Automatically determine if temperature indicates fever (≥38°C or ≥100.4°F)
+    const hasFever = temperature >= 38;
+    
+    try {
+        const entries = getEntries();
+        const index = entries.findIndex(e => e.id === id);
+        
+        if (index !== -1) {
+            // Update the entry with new values
+            entries[index].date = dateInput;
+            entries[index].temperature = temperature;
+            entries[index].notes = notes;
+            entries[index].fever = hasFever;
+            
+            // Save the updated entries
+            localStorage.setItem('temperatureEntries', JSON.stringify(entries));
+            
+            // Hide the modal and refresh the entries list
+            hideModal();
+            loadEntries();
+        } else {
+            console.error('Entry not found:', id);
+            alert('Error: Entry not found');
+        }
+    } catch (error) {
+        console.error('Error updating entry:', error);
+        alert('An error occurred while updating the entry');
+    }
+    
+    return false;
+});
+
+// Delete entry
+function deleteEntry(id) {
+    if (confirm('Are you sure you want to delete this entry?')) {
+        const entries = getEntries().filter(entry => entry.id !== id);
+        localStorage.setItem('temperatureEntries', JSON.stringify(entries));
+        loadEntries();
+    }
+}
+
+// Helper function to format date as "DD MMM YYYY"
+function formatDate(dateString) {
+    const options = { day: '2-digit', month: 'short', year: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-US', options);
+}
+
+// Helper function to update date display
+function updateDateDisplay(inputElement, displayElement) {
+    if (!inputElement || !displayElement) return;
+    
+    const date = new Date(inputElement.value);
+    if (isNaN(date.getTime())) return;
+    
+    const options = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    };
+    displayElement.textContent = date.toLocaleDateString('en-US', options);
 }
 
 // Get device's current date in YYYY-MM-DD format
@@ -296,7 +443,6 @@ function handleFormSubmit(e) {
     const dateInput = document.getElementById('date');
     const tempInput = document.getElementById('temperature');
     const notes = document.getElementById('notes').value;
-    const fever = document.getElementById('fever').checked;
     
     // Validate date is not in the future
     const today = new Date();
@@ -315,19 +461,21 @@ function handleFormSubmit(e) {
     
     const temperature = getTempForStorage(temp);
     
+    // Automatically determine if temperature indicates fever (≥38°C or ≥100.4°F)
+    const hasFever = temperature >= 38;
+    
     const entry = {
         id: Date.now().toString(),
         date: dateInput.value,
         temperature,
         notes,
-        fever,
+        fever: hasFever,
         // Store the timezone offset in minutes
         timezoneOffset: new Date().getTimezoneOffset()
     };
     
     saveEntry(entry);
     tempForm.reset();
-    document.getElementById('fever').checked = false;
     dateInput.value = getCurrentLocalDate();
 }
 
@@ -548,119 +696,6 @@ function updateOvulationInfo(entries) {
     }
 }
 
-// Handle edit form submission - FIXED VERSION
-document.getElementById('editForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    e.stopPropagation(); // Prevent event bubbling
-    
-    console.log('Edit form submitted'); // Debug log
-    
-    const id = document.getElementById('editId').value;
-    let tempInput = document.getElementById('editTemperature').value.trim();
-    const notes = document.getElementById('editNotes').value;
-    const fever = document.getElementById('editFever').checked;
-    
-    console.log('Form values:', { id, tempInput, notes, fever }); // Debug log
-    
-    // Validate temperature input
-    if (!tempInput || tempInput === '') {
-        alert('Please enter a temperature');
-        return false;
-    }
-    
-    // Convert the input temperature to a number and ensure proper conversion
-    let temperature = parseFloat(tempInput.replace(',', '.')); // Handle both comma and dot decimal separators
-    if (isNaN(temperature)) {
-        alert('Please enter a valid temperature');
-        return false;
-    }
-    
-    // Validate temperature range before conversion
-    const currentUnit = getCurrentUnit();
-    if (!isValidTemperature(temperature, currentUnit)) {
-        const range = currentUnit === 'C' ? '35°C-42°C' : '95°F-107.6°F';
-        alert(`Please enter a valid temperature between ${range}`);
-        return false;
-    }
-    
-    // Convert to Celsius if we're in Fahrenheit mode
-    if (currentUnit === 'F') {
-        temperature = fahrenheitToCelsius(temperature);
-    }
-    
-    // Round to one decimal place for consistency
-    temperature = Math.round(temperature * 10) / 10;
-    
-    console.log('Processed temperature:', temperature); // Debug log
-    
-    try {
-        const entries = getEntries();
-        const index = entries.findIndex(e => e.id === id);
-        
-        console.log('Entry index found:', index); // Debug log
-        
-        if (index !== -1) {
-            // Update the entry
-            entries[index].temperature = temperature;
-            entries[index].notes = notes;
-            entries[index].fever = fever;
-            
-            // Save to localStorage
-            localStorage.setItem('temperatureEntries', JSON.stringify(entries));
-            
-            console.log('Entry updated and saved'); // Debug log
-            
-            // Reload the entries display
-            loadEntries();
-            
-            // Hide the modal after successful save
-            hideModal();
-            
-            // Show success message
-            console.log('Temperature updated successfully');
-        } else {
-            alert('Error: Entry not found');
-            console.error('Entry with id not found:', id);
-        }
-    } catch (error) {
-        console.error('Error updating entry:', error);
-        alert('Error updating entry. Please try again.');
-    }
-    
-    return false; // Ensure form doesn't submit normally
-});
-
-// Delete entry
-function deleteEntry(id) {
-    if (confirm('Are you sure you want to delete this entry?')) {
-        const entries = getEntries().filter(entry => entry.id !== id);
-        localStorage.setItem('temperatureEntries', JSON.stringify(entries));
-        loadEntries();
-    }
-}
-
-// Helper function to format date as "DD MMM YYYY"
-function formatDate(dateString) {
-    const options = { day: '2-digit', month: 'short', year: 'numeric' };
-    return new Date(dateString).toLocaleDateString('en-US', options);
-}
-
-// Helper function to update date display
-function updateDateDisplay(inputElement, displayElement) {
-    if (!inputElement || !displayElement) return;
-    
-    const date = new Date(inputElement.value);
-    if (isNaN(date.getTime())) return;
-    
-    const options = { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-    };
-    displayElement.textContent = date.toLocaleDateString('en-US', options);
-}
-
 // Register Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -692,13 +727,3 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
-
-// Add this new function to handle edit button clicks
-function handleEditClick(event, id) {
-    event.preventDefault();
-    const entries = getEntries();
-    const entry = entries.find(e => e.id === id);
-    if (entry) {
-        showEditModal(entry);
-    }
-}
