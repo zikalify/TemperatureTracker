@@ -3,30 +3,32 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
 :root {
-    --primary-color: #9c27b0;
-    --primary-light: #d05ce3;
-    --primary-dark: #6a0080;
-    --secondary-color: #ff9800;
-    --text-color: #333;
-    --text-light: #666;
-    --background: #f9f5fa;
-    --surface: #ffffff;
-    --error: #f44336;
-    --success: #4caf50;
-    --border-radius: 8px;
-    --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    --transition: all 0.3s ease;
+    --primary-color: #8a4fff;
+    --primary-light: #b47cff;
+    --primary-dark: #6b2d9e;
+    --secondary-color: #ff8a4f;
+    --text-color: #2d3748;
+    --text-light: #4a5568;
+    --background: linear-gradient(135deg, #f9f5ff 0%, #f0f4ff 100%);
+    --surface: rgba(255, 255, 255, 0.95);
+    --error: #ff4d4f;
+    --success: #52c41a;
+    --border-radius: 12px;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body {
-    background-color: var(--background);
+    background: var(--background);
     color: var(--text-color);
     line-height: 1.6;
     padding: 20px;
+    min-height: 100vh;
+    background-attachment: fixed;
 }
 
 .container {
@@ -37,35 +39,67 @@ body {
 
 header {
     text-align: center;
-    margin-bottom: 30px;
-    padding: 20px 0;
-    border-bottom: 1px solid #eee;
+    margin-bottom: 40px;
+    padding: 30px 0;
+    background: var(--surface);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(245,243,255,0.9) 100%);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 header h1 {
     color: var(--primary-color);
     margin-bottom: 10px;
-    font-size: 2.2em;
+    font-size: 2.5em;
+    font-weight: 700;
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 header p {
     color: var(--text-light);
     font-size: 1.1em;
+    max-width: 600px;
+    margin: 0 auto;
 }
 
 /* Form Styles */
 .temperature-form {
     background: var(--surface);
-    padding: 25px;
+    padding: 30px;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
-    margin-bottom: 25px;
+    margin-bottom: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.temperature-form:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
 }
 
 .temperature-form h2 {
-    color: var(--primary-color);
-    margin-bottom: 20px;
-    font-size: 1.5em;
+    color: var(--primary-dark);
+    margin-bottom: 25px;
+    font-size: 1.6em;
+    font-weight: 600;
+    position: relative;
+    padding-bottom: 10px;
+}
+
+.temperature-form h2::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 50px;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+    border-radius: 2px;
 }
 
 .form-group {
@@ -83,11 +117,15 @@ input[type="date"],
 input[type="number"],
 textarea {
     width: 100%;
-    padding: 12px 15px;
-    border: 1px solid #ddd;
-    border-radius: var(--border-radius);
+    padding: 14px 18px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
     font-size: 1em;
     transition: var(--transition);
+    background: rgba(255, 255, 255, 0.9);
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
 }
 
 input[type="date"]:focus,
@@ -95,7 +133,8 @@ input[type="number"]:focus,
 textarea:focus {
     border-color: var(--primary-color);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(156, 39, 176, 0.2);
+    box-shadow: 0 0 0 3px rgba(138, 79, 255, 0.15);
+    background: white;
 }
 
 textarea {
@@ -117,24 +156,26 @@ textarea {
 /* Ovulation Info Section */
 .ovulation-info-section {
     background: var(--surface);
-    padding: 25px;
+    padding: 30px;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
-    margin-bottom: 25px;
+    margin-bottom: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    transition: transform 0.3s ease;
 }
 
-.ovulation-info-section h2 {
-    color: var(--primary-color);
-    margin-bottom: 15px;
-    font-size: 1.5em;
+.ovulation-info-section:hover {
+    transform: translateY(-2px);
 }
 
 .ovulation-info {
-    background: #f8f0fa;
-    padding: 15px;
+    background: linear-gradient(135deg, rgba(245, 243, 255, 0.7) 0%, rgba(240, 244, 255, 0.7) 100%);
+    padding: 20px;
     border-radius: var(--border-radius);
     border-left: 4px solid var(--primary-color);
     margin-bottom: 15px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 .ovulation-info p {
@@ -157,20 +198,23 @@ textarea {
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
     overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 .entries-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px;
-    border-bottom: 1px solid #eee;
+    padding: 20px 25px;
+    background: linear-gradient(135deg, rgba(245, 243, 255, 0.7) 0%, rgba(240, 244, 255, 0.7) 100%);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .entries-header h2 {
-    color: var(--primary-color);
+    color: var(--primary-dark);
     font-size: 1.5em;
     margin: 0;
+    font-weight: 600;
 }
 
 .entries-list {
@@ -179,6 +223,12 @@ textarea {
     transition: max-height 0.3s ease-out;
     scrollbar-width: thin;
     scrollbar-color: var(--primary-light) #f0f0f0;
+    padding: 0 15px;
+}
+
+.entries-list.expanded {
+    max-height: 60vh;
+    padding: 15px;
 }
 
 .entries-list::-webkit-scrollbar {
@@ -195,66 +245,94 @@ textarea {
     border-radius: 3px;
 }
 
-.entries-list.expanded {
-    max-height: 60vh; /* Use viewport height for better responsiveness */
-    overflow-y: auto;
-}
-
 .entries-list.collapsed {
     max-height: 0;
 }
 
-.entry-card {
-    padding: 15px 20px;
-    border-bottom: 1px solid #f0f0f0;
-    transition: var(--transition);
+.entry {
+    padding: 18px 28px 24px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    background: white;
+    margin: 10px 0;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
-.entry-card:last-child {
+.entry:last-child {
     border-bottom: none;
+    margin-bottom: 12px;
 }
 
-.entry-card:hover {
-    background-color: #faf5ff;
+.entry:hover {
+    background-color: #f8f9ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .entry-date {
     font-weight: 600;
     color: var(--primary-dark);
-    margin-bottom: 5px;
+    font-size: 0.95em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    padding-top: 4px;
 }
 
 .entry-temp {
-    font-size: 1.4em;
-    font-weight: 600;
+    font-size: 1.8em;
+    font-weight: 700;
     color: var(--primary-color);
-    margin: 5px 0;
+    margin: 4px 0 10px;
+    letter-spacing: -0.5px;
+    padding: 0 4px;
+    line-height: 1.2;
 }
 
 .entry-notes {
     color: var(--text-light);
-    margin: 8px 0;
+    margin: 8px 0 0;
     font-size: 0.95em;
-    line-height: 1.5;
+    line-height: 1.6;
+    padding: 12px 0 0;
+    border-top: 1px dashed rgba(0, 0, 0, 0.08);
 }
 
 .entry-actions {
+    margin: 16px 0 8px;
     display: flex;
     gap: 10px;
-    margin-top: 10px;
+    padding: 12px 0;
+    position: relative;
+}
+
+.entry-actions::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-bottom: 1px dashed rgba(0, 0, 0, 0.1);
 }
 
 .entry-actions button {
-    background: none;
-    border: 1px solid #ddd;
-    padding: 5px 10px;
-    border-radius: 4px;
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9em;
+    font-weight: 500;
     cursor: pointer;
-    font-size: 0.85em;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    gap: 5px;
-    transition: var(--transition);
+    justify-content: center;
+    gap: 6px;
 }
 
 .entry-actions button i {
@@ -276,24 +354,23 @@ textarea {
 
 /* Buttons */
 .btn {
-    background-color: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
     color: white;
     border: none;
-    padding: 12px 20px;
-    border-radius: var(--border-radius);
+    padding: 12px 24px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 1em;
-    font-weight: 500;
+    font-weight: 600;
     transition: var(--transition);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(138, 79, 255, 0.3);
 }
 
 .btn:hover {
-    background-color: var(--primary-dark);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(138, 79, 255, 0.4);
 }
 
 .btn:active {
@@ -301,12 +378,25 @@ textarea {
 }
 
 .btn-cancel {
-    background-color: #f5f5f5;
-    color: var(--text-color);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 600;
+    transition: var(--transition);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(138, 79, 255, 0.3);
+    margin-left: 10px;
 }
 
 .btn-cancel:hover {
-    background-color: #e0e0e0;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(138, 79, 255, 0.4);
+    background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
 }
 
 .btn-expand {
@@ -448,7 +538,13 @@ textarea {
 
 /* Temperature Validation */
 input:invalid {
-    border-color: #dc3545;
+    border-color: #e2e8f0 !important;
+    box-shadow: none !important;
+}
+
+input:focus:invalid {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 3px rgba(138, 79, 255, 0.15) !important;
 }
 
 /* Modal Styles */
@@ -518,22 +614,22 @@ input:invalid {
 /* Responsive Design */
 @media (max-width: 768px) {
     .container {
-        padding: 10px;
+        padding: 15px;
+    }
+    
+    header {
+        padding: 20px 15px;
     }
     
     .temperature-form,
     .ovulation-info-section,
     .entries {
-        padding: 15px;
+        padding: 20px;
     }
     
-    .entry-actions {
-        flex-direction: column;
-    }
-    
-    .entry-actions button {
+    .btn {
         width: 100%;
-        justify-content: center;
+        padding: 14px;
     }
 }
 
@@ -567,6 +663,37 @@ input:invalid {
     to { opacity: 1; transform: translateY(0); }
 }
 
-.entry-card {
+.entry {
     animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-light);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color);
+}
+
+/* Loading Animation */
+@keyframes pulse {
+    0% { opacity: 0.6; transform: scale(0.98); }
+    50% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0.6; transform: scale(0.98); }
+}
+
+.loading {
+    animation: pulse 1.5s infinite ease-in-out;
 }
