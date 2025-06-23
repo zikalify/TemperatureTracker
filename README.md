@@ -49,4 +49,5 @@ Privacy
 All your data stays on your device. No personal information is collected or stored on any server.
 
 Getting Started
+
 Simply open the app in a modern web browser and start tracking your temperature daily for the most accurate predictions.
