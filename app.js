@@ -573,15 +573,19 @@ function calculateOvulationDate(entries) {
         .filter(entry => !entry.fever)
         .sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
     
-    const today = new Date();
-    const lookbackDays = 30; // Increased from 21 to 30 days for more flexibility
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - lookbackDays);
+    // Find the latest entry date
+    const latestEntry = sortedEntries[sortedEntries.length - 1];
+    const latestDate = parseLocalDate(latestEntry.date);
+    
+    // Calculate start date as 30 days before latest entry
+    const lookbackDays = 30;
+    const startDate = new Date(latestDate);
+    startDate.setDate(latestDate.getDate() - lookbackDays);
     
     // Get valid entries within date range
     const validEntries = sortedEntries.filter(entry => {
         const entryDate = parseLocalDate(entry.date);
-        return entryDate >= startDate && entryDate <= today;
+        return entryDate >= startDate && entryDate <= latestDate;
     });
     
     if (validEntries.length < 6) {
