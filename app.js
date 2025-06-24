@@ -53,10 +53,10 @@ document.addEventListener('DOMContentLoaded', function() {
         editId.value = entry.id;
         editDate.value = entry.date;
         
-        // Display temperature in the current unit
+        // Display temperature with exactly 2 decimal places
         const currentUnit = getCurrentUnit();
         const displayTemp = currentUnit === 'C' ? entry.temperature : celsiusToFahrenheit(entry.temperature);
-        editTemperature.value = displayTemp.toFixed(1);
+        editTemperature.value = displayTemp.toFixed(2);
         
         editNotes.value = entry.notes || '';
         
@@ -100,7 +100,7 @@ function getCurrentUnit() {
     return celsiusBtn.classList.contains('active') ? 'C' : 'F';
 }
 
-// Format temperature based on current unit
+// Format temperature based on current unit with 2 decimal places
 function formatTemperature(temp, withUnit = true) {
     const isCelsius = getCurrentUnit() === 'C';
     let displayTemp = parseFloat(temp);
@@ -109,10 +109,9 @@ function formatTemperature(temp, withUnit = true) {
         displayTemp = celsiusToFahrenheit(displayTemp);
     }
     
-    // Round to 1 decimal place
-    displayTemp = Math.round(displayTemp * 10) / 10;
-    
-    return withUnit ? `${displayTemp}°${isCelsius ? 'C' : 'F'}` : displayTemp;
+    // Always show 2 decimal places
+    const formattedTemp = displayTemp.toFixed(2);
+    return withUnit ? `${formattedTemp}°${isCelsius ? 'C' : 'F'}` : formattedTemp;
 }
 
 // Convert input temperature to Celsius for storage
@@ -323,8 +322,8 @@ document.getElementById('editForm').addEventListener('submit', function(e) {
         temperature = fahrenheitToCelsius(temperature);
     }
     
-    // Round to one decimal place for consistency
-    temperature = Math.round(temperature * 10) / 10;
+    // Keep the exact temperature value with 2 decimal places
+    temperature = parseFloat(temperature.toFixed(2));
     
     // Automatically determine if temperature indicates fever (≥38°C or ≥100.4°F)
     const hasFever = temperature >= 38;
@@ -588,39 +587,70 @@ function calculateOvulationDate(entries) {
         return entryDate >= startDate && entryDate <= latestDate;
     });
     
-    if (validEntries.length < 6) {
+    if (validEntries.length < 4) {
         return { 
             date: null, 
             confidence: 'low', 
-            message: `Need at least 6 valid readings (have ${validEntries.length})` 
+            message: `Need at least 4 valid readings (have ${validEntries.length})` 
         };
     }
     
     let bestOvulationDay = null;
     let bestConfidence = 'low';
     
-    // Check for 3-over-6 pattern in a sliding window
-    for (let i = 6; i < validEntries.length - 2; i++) {
-        const sixDays = validEntries.slice(i - 6, i);
-        const threeDays = validEntries.slice(i, i + 3);
+    // Check for 3-over-flexible window pattern
+    for (let i = 3; i < validEntries.length - 2; i++) {
+        // Get the last 6 calendar days of data (not necessarily 6 entries)
+        const currentDate = parseLocalDate(validEntries[i].date);
+        const sixDaysAgo = new Date(currentDate);
+        sixDaysAgo.setDate(sixDaysAgo.getDate() - 6);
         
-        // Calculate gaps between first and last day of the 9-day window
-        const firstDay = parseLocalDate(sixDays[0].date);
-        const lastDay = parseLocalDate(threeDays[2].date);
-        const totalDays = daysBetween(firstDay, lastDay);
+        // Get all entries within the 6-day window before current date
+        const sixDayWindow = [];
+        // Create array of all dates in the 6-day window
+        const windowDates = [];
+        for (let d = new Date(sixDaysAgo); d < currentDate; d.setDate(d.getDate() + 1)) {
+            windowDates.push(new Date(d).toISOString().split('T')[0]);
+        }
         
-        // Skip if the pattern is too spread out
-        if (totalDays > 14) continue;
+        // Get entries for each date in the window
+        windowDates.forEach(date => {
+            const entry = validEntries.find(e => e.date === date);
+            if (entry) sixDayWindow.push(entry);
+        });
+            
+        // Skip if we don't have enough days with data in the window
+        if (sixDayWindow.length < 4) continue;
+            
+        // Get the 3 days after the window
+        const threeDays = validEntries
+            .filter(entry => {
+                const entryDate = parseLocalDate(entry.date);
+                return entryDate >= currentDate && 
+                       entryDate <= new Date(currentDate.getTime() + 3 * 24 * 60 * 60 * 1000);
+            });
+            
+        if (threeDays.length < 3) continue;
         
-        const sixDayAvg = sixDays.reduce((sum, entry) => sum + entry.temperature, 0) / 6;
+        // Calculate the average of the 6-day window
+        const sixDayAvg = sixDayWindow.reduce((sum, entry) => sum + entry.temperature, 0) / sixDayWindow.length;
         
         // Check if next 3 days are all above the average
         const isRise = threeDays.every(day => day.temperature > sixDayAvg + 0.2);
         
         if (isRise) {
-            const ovulationDate = parseLocalDate(validEntries[i - 1].date);
-            // Calculate confidence based on data quality
-            const confidence = calculateConfidence(sixDays, threeDays, sixDayAvg);
+            const ovulationDate = new Date(currentDate);
+            ovulationDate.setDate(ovulationDate.getDate() - 1); // Day before the rise
+            
+            // Calculate confidence based on data quality and number of entries
+            const confidence = calculateConfidence(sixDayWindow, threeDays, sixDayAvg);
+            
+            // Adjust confidence based on number of entries in the 6-day window
+            if (sixDayWindow.length < 6) {
+                if (confidence.level === 'high') confidence.level = 'medium';
+                else if (confidence.level === 'medium') confidence.level = 'low';
+                confidence.details += ` (only ${sixDayWindow.length} of 6 days with data)`;
+            }
             
             // Update best match if this one has higher confidence
             if (!bestOvulationDay || confidence.level > bestConfidence.level) {
@@ -639,31 +669,87 @@ function calculateOvulationDate(entries) {
     };
 }
 
-/**
- * Calculate confidence level of ovulation detection
- */
 function calculateConfidence(sixDays, threeDays, sixDayAvg) {
-    // Count how many of the 3 days are significantly above the average
-    const significantRiseCount = threeDays
-        .filter(day => day.temperature > sixDayAvg + 0.3)
-        .length;
+    // 1. Calculate data completeness
+    const dataDensity = sixDays.length / 6;
+    let confidence = { level: 'low', details: '' };
+
+    // 2. Calculate temperature rise metrics
+    const riseAmounts = threeDays.map(day => day.temperature - sixDayAvg);
+    const significantRiseCount = riseAmounts.filter(rise => rise >= 0.15).length; // Reduced threshold for significant rise
+    const avgRise = riseAmounts.reduce((a, b) => a + b, 0) / riseAmounts.length;
     
-    // Calculate temperature stability in baseline
+    // 3. Analyze baseline stability
     const baselineTemps = sixDays.map(day => day.temperature);
     const baselineStability = calculateStability(baselineTemps);
     
-    // Calculate rise consistency
-    const riseAmounts = threeDays.map(day => day.temperature - sixDayAvg);
-    const riseConsistency = calculateStability(riseAmounts);
+    // 4. Calculate rise consistency (more lenient calculation)
+    const riseStability = calculateStability(threeDays.map(day => day.temperature));
+    const isConsistentRise = riseAmounts.every((val, i, arr) => i === 0 || val >= arr[i-1] - 0.1);
     
-    // Determine confidence level
-    if (significantRiseCount >= 2 && baselineStability < 0.2 && riseConsistency < 0.3) {
-        return { level: 'high', details: 'Strong temperature shift with stable baseline' };
-    } else if (significantRiseCount >= 1 && baselineStability < 0.3) {
-        return { level: 'medium', details: 'Moderate temperature shift' };
+    // 5. Check for sustained rise over more days if needed
+    const extendedRiseDays = riseAmounts.filter((val, i, arr) => {
+        // Look for at least 3 out of 4 days with rising or stable temps
+        if (i < 3) return true;
+        const window = arr.slice(i-3, i+1);
+        return window.every((v, idx) => idx === 0 || v >= window[idx-1] - 0.1);
+    }).length;
+    
+    // 6. Determine base confidence (more lenient criteria)
+    if (avgRise >= 0.3 && baselineStability < 0.3) {
+        confidence = { 
+            level: 'high', 
+            details: 'Clear temperature shift with stable baseline' 
+        };
+    } else if (avgRise >= 0.2 || (significantRiseCount >= 2 && isConsistentRise)) {
+        confidence = { 
+            level: 'medium', 
+            details: 'Moderate temperature shift detected' 
+        };
+    } else if (extendedRiseDays >= 3) {
+        confidence = { 
+            level: 'medium',
+            details: 'Sustained temperature rise detected over multiple days'
+        };
     }
     
-    return { level: 'low', details: 'Weak or inconsistent temperature pattern' };
+    // 7. Adjust for data quality - be strict with missing data
+    if (dataDensity < 1) {
+        if (dataDensity < 0.67) {  // Less than 4 out of 6 days
+            confidence = { 
+                level: 'low', 
+                details: 'Insufficient data in baseline period (need at least 4 of 6 days)' 
+            };
+        } else if (confidence.level === 'high' && dataDensity < 0.85) {
+            confidence.level = 'medium';
+            confidence.details += ' (reduced confidence due to missing data)';
+        } else if (confidence.level === 'medium' && dataDensity < 0.67) {
+            confidence.level = 'low';
+            confidence.details += ' (reduced confidence due to missing data)';
+        }
+    }
+    
+    // 8. If we have sufficient data and a clear pattern, be more lenient with confidence
+    if (dataDensity >= 0.67) {  // At least 4 out of 6 days
+        // If we have a clear temperature rise pattern
+        if (avgRise >= 0.2 || (significantRiseCount >= 2 && isConsistentRise)) {
+            // If we have 5-6 days of data, allow medium confidence
+            if (dataDensity >= 0.83) {
+                confidence = { 
+                    level: 'medium',
+                    details: 'Clear temperature pattern detected with good data coverage' 
+                };
+            } else if (confidence.level === 'low') {
+                // With 4 days, be more cautious but still acknowledge the pattern
+                confidence = { 
+                    level: 'medium',
+                    details: 'Possible temperature shift detected (moderate data coverage)' 
+                };
+            }
+        }
+    }
+    
+    return confidence;
 }
 
 /**
