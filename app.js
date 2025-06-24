@@ -53,10 +53,14 @@ document.addEventListener('DOMContentLoaded', function() {
         editId.value = entry.id;
         editDate.value = entry.date;
         
-        // Display temperature with exactly 2 decimal places
+        // Display temperature with exact value from storage
         const currentUnit = getCurrentUnit();
-        const displayTemp = currentUnit === 'C' ? entry.temperature : celsiusToFahrenheit(entry.temperature);
-        editTemperature.value = displayTemp.toFixed(2);
+        if (currentUnit === 'C') {
+            editTemperature.value = entry.temperature;
+        } else {
+            const fahrenheit = celsiusToFahrenheit(entry.temperature);
+            editTemperature.value = fahrenheit.toFixed(2);
+        }
         
         editNotes.value = entry.notes || '';
         
@@ -79,6 +83,12 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeModal();
 });
 
+// Utility function to handle temperature display without altering the value
+function formatTempForDisplay(temp) {
+    // Simply return the number as is - let toFixed handle the display
+    return temp;
+}
+
 // DOM Elements
 const tempForm = document.getElementById('tempForm');
 const entriesList = document.getElementById('entriesList');
@@ -100,18 +110,23 @@ function getCurrentUnit() {
     return celsiusBtn.classList.contains('active') ? 'C' : 'F';
 }
 
-// Format temperature based on current unit with 2 decimal places
+// Format temperature for display with 2 decimal places
 function formatTemperature(temp, withUnit = true) {
     const isCelsius = getCurrentUnit() === 'C';
     let displayTemp = parseFloat(temp);
     
     if (!isCelsius) {
-        displayTemp = celsiusToFahrenheit(displayTemp);
+        // Convert to Fahrenheit
+        displayTemp = (displayTemp * 9/5) + 32;
     }
     
-    // Always show 2 decimal places
-    const formattedTemp = displayTemp.toFixed(2);
-    return withUnit ? `${formattedTemp}°${isCelsius ? 'C' : 'F'}` : formattedTemp;
+    // Format with exactly 2 decimal places for display
+    const formatted = displayTemp.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+    
+    return withUnit ? `${formatted}°${isCelsius ? 'C' : 'F'}` : formatted;
 }
 
 // Convert input temperature to Celsius for storage
@@ -302,10 +317,21 @@ document.getElementById('editForm').addEventListener('submit', function(e) {
         return false;
     }
     
-    // Convert the input temperature to a number and ensure proper conversion
-    let temperature = parseFloat(tempInput.replace(',', '.')); // Handle both comma and dot decimal separators
-    if (isNaN(temperature)) {
-        alert('Please enter a valid temperature');
+    // Convert the input temperature to a number, handling both comma and dot
+    let temperature;
+    try {
+        // Replace comma with dot and parse as float
+        const normalizedInput = tempInput.replace(',', '.');
+        temperature = parseFloat(normalizedInput);
+
+        if (isNaN(temperature)) {
+            throw new Error('Invalid number');
+        }
+
+        // Round user input to 2 decimal places
+        temperature = parseFloat(temperature.toFixed(2));
+    } catch (error) {
+        alert('Please enter a valid temperature (e.g., 36.75 or 36,75)');
         return false;
     }
     
@@ -322,8 +348,8 @@ document.getElementById('editForm').addEventListener('submit', function(e) {
         temperature = fahrenheitToCelsius(temperature);
     }
     
-    // Keep the exact temperature value with 2 decimal places
-    temperature = parseFloat(temperature.toFixed(2));
+    // Keep the temperature value with 4 decimal places for precision
+    temperature = parseFloat(temperature.toFixed(4));
     
     // Automatically determine if temperature indicates fever (≥38°C or ≥100.4°F)
     const hasFever = temperature >= 38;
@@ -455,7 +481,16 @@ function handleFormSubmit(e) {
     }
     
     // Validate temperature
-    const temp = parseFloat(tempInput.value);
+    const tempStr = tempInput.value.replace(',', '.');
+    let temp = parseFloat(tempStr);
+
+    if (isNaN(temp)) {
+        alert('Please enter a valid temperature.');
+        return;
+    }
+    
+    // Round user input to 2 decimal places.
+    temp = parseFloat(temp.toFixed(2));
     if (!isValidTemperature(temp, getCurrentUnit())) {
         alert('Please enter a valid temperature between 35°C-42°C (95°F-107.6°F)');
         return;
@@ -486,6 +521,11 @@ function handleFormSubmit(e) {
 function saveEntry(entry) {
     const entries = getEntries();
     const existingIndex = entries.findIndex(e => e.date === entry.date);
+
+    // Ensure temperature is stored with high precision (4 decimal places) to avoid rounding errors
+    if (typeof entry.temperature === 'number') {
+        entry.temperature = parseFloat(entry.temperature.toFixed(4));
+    }
 
     if (existingIndex >= 0) {
         // Preserve the original id
