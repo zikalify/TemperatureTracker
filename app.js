@@ -478,7 +478,8 @@ function handleFormSubmit(e) {
     
     saveEntry(entry);
     tempForm.reset();
-    dateInput.value = getCurrentLocalDate();
+    // Keep the selected date instead of resetting to today
+    dateInput.value = entry.date;
 }
 
 // Save entry to local storage
