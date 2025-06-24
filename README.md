@@ -14,34 +14,45 @@ Add optional notes to each entry
 📊 Fertility Insights
 
 Predicts most likely ovulation date using the 3-over-6 rule
+
 Provides confidence levels for predictions (high/medium/low)
+
 Visualizes temperature patterns over time
 Identifies potential fertile windows
 
 📱 User Experience
 
 Clean, responsive design that works on all devices
+
 Offline functionality with service workers
+
 Data stored locally in the browser
+
 Installable as a Progressive Web App (PWA)
 
 🔄 Data Management
 
 Edit or delete previous entries
+
 View historical data in a scrollable list
+
 Automatic date handling with today's date as default
 
 How It Works
 
 Track Daily: Take your temperature first thing in the morning and record it in the app
+
 Monitor Patterns: The app analyzes your temperature data to identify patterns
+
 Get Predictions: Receive insights about your fertility window and likely ovulation date
 
 Technical Details
 
 Frontend: HTML5, CSS3, JavaScript (Vanilla JS)
 Data Storage: LocalStorage for offline access
+
 Progressive Web App: Installable on devices for app-like experience
+
 Responsive Design: Works on mobile, tablet, and desktop
 
 Privacy
