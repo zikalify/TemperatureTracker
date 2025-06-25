@@ -772,23 +772,25 @@ function calculateConfidence(sixDays, threeDays, sixDayAvg) {
     
     // 8. If we have sufficient data and a clear pattern, be more lenient with confidence
     if (dataDensity >= 0.67) {  // At least 4 out of 6 days
-        // If we have a clear temperature rise pattern
-        if (avgRise >= 0.2 || (significantRiseCount >= 2 && isConsistentRise)) {
-            // If we have 5-6 days of data, allow medium confidence
-            if (dataDensity >= 0.83) {
+    // If we have a clear temperature rise pattern
+    if (avgRise >= 0.2 || (significantRiseCount >= 2 && isConsistentRise)) {
+        // If we have 5–6 days of data, allow medium confidence
+        if (dataDensity >= 0.83) {
+            if (confidence.level !== 'high') {
                 confidence = { 
                     level: 'medium',
                     details: 'Clear temperature pattern detected with good data coverage' 
                 };
-            } else if (confidence.level === 'low') {
-                // With 4 days, be more cautious but still acknowledge the pattern
-                confidence = { 
-                    level: 'medium',
-                    details: 'Possible temperature shift detected (moderate data coverage)' 
-                };
             }
+        } else if (confidence.level === 'low') {
+            // With 4 days, be more cautious but still acknowledge the pattern
+            confidence = { 
+                level: 'medium',
+                details: 'Possible temperature shift detected (moderate data coverage)' 
+            };
         }
     }
+}
     
     return confidence;
 }
