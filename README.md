@@ -1,5 +1,7 @@
 Temperature Tracker - Fertility Awareness App
+
 Overview
+
 Temperature Tracker is a web-based application that helps users track their basal body temperature (BBT) to monitor fertility cycles and predict ovulation. The app provides a simple, intuitive interface for recording daily temperature readings and offers insights into menstrual cycle patterns.
 
 Key Features
