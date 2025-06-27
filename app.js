@@ -639,21 +639,23 @@ function calculateOvulationDate(entries) {
     let bestOvulationDay = null;
     let bestConfidence = 'low';
     
+    let sixDayWindow = [];
+
     // Check for 3-over-flexible window pattern
     for (let i = 3; i < validEntries.length - 2; i++) {
+        // Reset window for each iteration
+        let sixDayWindow = [];
         // Get the last 6 calendar days of data (not necessarily 6 entries)
         const currentDate = parseLocalDate(validEntries[i].date);
         const sixDaysAgo = new Date(currentDate);
-        sixDaysAgo.setDate(sixDaysAgo.getDate() - 6);
-        
-        // Get all entries within the 6-day window before current date
-        const sixDayWindow = [];
+        sixDaysAgo.setDate(currentDate.getDate() - 6);
+        // Move sixDaysAgo back by one more day
+        sixDaysAgo.setDate(sixDaysAgo.getDate() - 1);
         // Create array of all dates in the 6-day window
         const windowDates = [];
         for (let d = new Date(sixDaysAgo); d < currentDate; d.setDate(d.getDate() + 1)) {
             windowDates.push(new Date(d).toISOString().split('T')[0]);
         }
-        
         // Get entries for each date in the window
         windowDates.forEach(date => {
             const entry = validEntries.find(e => e.date === date);
@@ -807,11 +809,93 @@ function calculateStability(readings) {
     return Math.sqrt(variance); // standard deviation
 }
 
+// Detects a possible ovulation dip: latest temp is significantly below the average of last 6 calendar days
+function checkEarlyWarningDip(entries) {
+    if (!entries || entries.length < 3) return { showWarning: false, dipDate: null };
+    const sorted = [...entries].filter(e => !e.fever).sort((a, b) => new Date(a.date) - new Date(b.date));
+    if (sorted.length < 3) return { showWarning: false, dipDate: null };
+    const lastDate = new Date(sorted[sorted.length - 1].date);
+    const sixDaysAgo = new Date(lastDate);
+    sixDaysAgo.setDate(lastDate.getDate() - 5);
+    const lastSixDays = sorted.filter(e => {
+        const d = new Date(e.date);
+        return d >= sixDaysAgo && d <= lastDate;
+    });
+    if (lastSixDays.length < 3) return { showWarning: false, dipDate: null };
+    const temps = lastSixDays.slice(0, -1).map(e => e.temperature);
+    if (temps.length < 2) return { showWarning: false, dipDate: null };
+    const avg = temps.reduce((a, b) => a + b, 0) / temps.length;
+    const latest = lastSixDays[lastSixDays.length - 1];
+    if (latest.temperature < avg - 0.15) {
+        return { showWarning: true, dipDate: latest.date };
+    }
+    return { showWarning: false, dipDate: null };
+}
+
 // Update the UI to show confidence information
 function updateOvulationInfo(entries) {
     const result = calculateOvulationDate(entries);
     const ovulationInfo = document.getElementById('ovulationInfo');
-    
+    // Always re-evaluate dip warning: if a dip is present in the latest entry and not refuted/confirmed, set it
+    let dipData = null;
+    let clearDip = false;
+    // Find the latest dip in the entries
+    let warningResult = { showWarning: false, dipDate: null };
+    // Only consider dips in the most recent 40 days
+    const entriesSorted = [...entries].sort((a, b) => new Date(a.date) - new Date(b.date));
+    let recentEntries = entriesSorted;
+    if (entriesSorted.length > 0) {
+        const latestDate = new Date(entriesSorted[entriesSorted.length - 1].date);
+        const windowStart = new Date(latestDate);
+        windowStart.setDate(latestDate.getDate() - 39);
+        recentEntries = entriesSorted.filter(e => new Date(e.date) >= windowStart);
+    }
+    // Find the latest dip in the recent entries only
+    for (let i = recentEntries.length - 1; i >= 0; i--) {
+        const subEntries = recentEntries.slice(0, i + 1);
+        const dipCheck = checkEarlyWarningDip(subEntries);
+        if (dipCheck.showWarning) {
+            warningResult = dipCheck;
+            break;
+        }
+    }
+    if (warningResult.showWarning) {
+        const dipDateObj = new Date(warningResult.dipDate);
+        if (result.date && new Date(result.date) >= dipDateObj) {
+            clearDip = true;
+            localStorage.removeItem('dipWarning');
+        } else {
+            const entriesAfterDip = entries.filter(e => new Date(e.date) > dipDateObj && !e.fever);
+            const dipTemp = entries.find(e => e.date === warningResult.dipDate)?.temperature;
+            if (entriesAfterDip.length >= 4 && dipTemp !== undefined) {
+                const riseCount = entriesAfterDip.slice(0, 4).filter(e => e.temperature > dipTemp + 0.2).length;
+                if (riseCount < 3) {
+                    clearDip = true;
+                    localStorage.removeItem('dipWarning');
+                }
+            }
+            if (!clearDip) {
+                dipData = { show: true, dipDate: warningResult.dipDate };
+                localStorage.setItem('dipWarning', JSON.stringify(dipData));
+            }
+        }
+    } else {
+        localStorage.removeItem('dipWarning');
+    }
+    dipData = JSON.parse(localStorage.getItem('dipWarning')) || null;
+    let dipWarningHtml = '';
+    if ((!result.date || (dipData && dipData.dipDate && result.date && new Date(result.date) < new Date(dipData.dipDate))) && dipData && dipData.show) {
+        let windowStart = '', windowEnd = '';
+        if (dipData.dipDate) {
+            const dipDateObj = new Date(dipData.dipDate);
+            const start = new Date(dipDateObj);
+            const end = new Date(dipDateObj);
+            end.setDate(end.getDate() + 2);
+            windowStart = formatDate(start.toISOString().split('T')[0]);
+            windowEnd = formatDate(end.toISOString().split('T')[0]);
+        }
+        dipWarningHtml = `<p class="warning">⚠️ Possible ovulation dip detected. Ovulation may be between ${windowStart} and ${windowEnd}.<br><span class='info-note'>This is a potentially fertile window; unprotected sex during this time may result in pregnancy.</span></p>`;
+    }
     if (result.date) {
         const formattedDate = formatDate(result.date.toISOString().split('T')[0]);
         ovulationInfo.innerHTML = `
@@ -821,6 +905,7 @@ function updateOvulationInfo(entries) {
                 <p class="confidence">Confidence: ${result.confidence}</p>
                 <p class="details">${result.message}</p>
             </div>
+            ${dipWarningHtml}
         `;
     } else {
         ovulationInfo.innerHTML = `
@@ -828,6 +913,7 @@ function updateOvulationInfo(entries) {
                 <p>${result.message}</p>
                 <p class="hint">Track your temperature daily for more accurate predictions.</p>
             </div>
+            ${dipWarningHtml}
         `;
     }
 }
@@ -1040,3 +1126,9 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// After finding the latest dip, check if the dip entry still exists
+if (dipData && dipData.dipDate && !entries.some(e => e.date === dipData.dipDate)) {
+    localStorage.removeItem('dipWarning');
+    dipData = null;
+}
