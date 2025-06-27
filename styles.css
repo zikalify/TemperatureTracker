@@ -15,6 +15,7 @@
     --text-light: #4a5568;
     --background: linear-gradient(135deg, #f9f5ff 0%, #f0f4ff 100%);
     --surface: rgba(255, 255, 255, 0.95);
+    --surface-elevated: #fff;
     --error: #ff4d4f;
     --success: #52c41a;
     --border-radius: 12px;
@@ -229,6 +230,14 @@ textarea {
     text-align: left;
 }
 
+.ovulation-info:has(.prediction) {
+    background: none;
+    border-left: none;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+}
+
 .ovulation-info p {
     margin-bottom: 8px;
 }
@@ -399,16 +408,20 @@ textarea {
 }
 
 .entry-actions button:hover {
-    background: #f5f5f5;
+    background: var(--button-hover-bg) !important;
+    color: var(--button-text) !important;
 }
 
+/* Light mode: delete button is grey */
 .entry-actions button.danger {
     color: var(--error);
     border-color: #ffcdd2;
+    background: #efefef;
 }
 
 .entry-actions button.danger:hover {
-    background: #ffebee;
+    background: var(--button-danger-hover) !important;
+    color: #23233a !important;
 }
 
 .btn-expand {
@@ -620,7 +633,8 @@ input:focus:invalid {
 }
 
 .modal-content {
-    background-color: white;
+    background-color: var(--surface-elevated) !important;
+    color: var(--text-color) !important;
     padding: 2rem;
     border-radius: var(--border-radius);
     width: 100%;
@@ -681,26 +695,26 @@ input:focus:invalid {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-    color: white;
-    border: none;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light)) !important;
+    color: #23233a !important;
+    border: none !important;
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary-color)) !important;
+    color: #fff !important;
 }
 
 .btn-cancel {
-    background: #f5f5f5;
-    color: var(--text-color);
-    border: 1px solid #ddd;
-    box-shadow: none;
+    background: var(--button-bg) !important;
+    color: var(--button-text) !important;
+    border: 1px solid var(--input-border) !important;
+    box-shadow: none !important;
 }
 
 .btn-cancel:hover {
-    background: #e0e0e0;
-    transform: translateY(-2px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: var(--button-hover-bg) !important;
+    color: var(--button-text) !important;
 }
 
 /* Modal Form Adjustments */
@@ -869,4 +883,175 @@ input:focus:invalid {
     display: block;
     margin: 0 auto;
     min-width: 200px;
+}
+
+/* Dark Mode Styles */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary-color: #a991f7;
+    --primary-light: #cfc1fa;
+    --primary-dark: #6c4ab6;
+    --secondary-color: #ffb47c;
+    --text-color: #f5f6fa;
+    --text-light: #bdb6d6;
+    --background: linear-gradient(135deg, #15151a 0%, #23213a 100%);
+    --surface: #23233a;
+    --surface-elevated: #2d2d44;
+    --error: #ff6b6b;
+    --success: #52c41a;
+    --input-bg: #23233a;
+    --input-border: #39395a;
+    --input-focus-bg: #2d2d44;
+    --input-focus-border: #a991f7;
+    --button-bg: #39395a;
+    --button-hover-bg: #4a4a6a;
+    --button-text: #f5f6fa;
+    --button-accent-bg: #a991f7;
+    --button-accent-hover: #cfc1fa;
+    --button-danger-bg: #4a2323;
+    --button-danger-hover: #ff6b6b;
+    --border: 1px solid #39395a;
+    --shadow: 0 2px 12px rgba(0,0,0,0.35);
+  }
+  body {
+    background: var(--background);
+    color: var(--text-color);
+  }
+  .container, header, .prediction, .ovulation-info {
+    background: var(--surface-elevated);
+    color: var(--text-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    border: var(--border);
+  }
+  input, textarea, select {
+    background: var(--input-bg);
+    color: var(--text-color);
+    border: 1px solid var(--input-border);
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--input-focus-border);
+    background: var(--input-focus-bg);
+    color: var(--text-color);
+  }
+  input[type="date"], input[type="number"] {
+    background: var(--input-bg);
+    color: var(--text-color);
+    border: 1px solid var(--input-border);
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(2);
+  }
+  input[type="date"]::-ms-input-placeholder {
+    color: var(--text-light);
+  }
+  input[type="date"]::-moz-placeholder {
+    color: var(--text-light);
+  }
+  input[type="date"]::placeholder {
+    color: var(--text-light);
+  }
+  #importBtn, #exportBtn, #toggleEntries, #tempForm button[type="submit"] {
+    background: var(--button-accent-bg) !important;
+    color: #23233a !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(160, 145, 247, 0.10);
+    transition: background 0.2s, color 0.2s;
+  }
+  #importBtn:hover, #exportBtn:hover, #toggleEntries:hover, #tempForm button[type="submit"]:hover {
+    background: var(--button-accent-hover) !important;
+    color: #23233a !important;
+  }
+  .prediction, .ovulation-info {
+    background: var(--surface-elevated);
+    color: var(--text-color);
+    border-left: 4px solid var(--primary-color);
+  }
+  .prediction.high {
+    background-color: #233a2d;
+    border-left-color: #52c41a;
+    color: #b9f6ca;
+  }
+  .prediction.medium {
+    background-color: #3a3623;
+    border-left-color: #ffc107;
+    color: #ffe082;
+  }
+  .prediction.low {
+    background-color: #3a2323;
+    border-left-color: #ff6b6b;
+    color: #ffcdd2;
+  }
+  button, .button {
+    background: var(--button-bg);
+    color: var(--button-text);
+    border-radius: var(--border-radius);
+    border: var(--border);
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+  }
+  button:hover, .button:hover {
+    background: var(--button-hover-bg);
+    color: var(--button-text);
+  }
+
+  /* Make import/export icons dark in dark mode */
+  #importBtn i, #exportBtn i {
+    color: #23233a !important;
+    filter: brightness(0.7) !important;
+    transition: color 0.2s, filter 0.2s;
+  }
+  #importBtn:hover i, #exportBtn:hover i {
+    color: #23233a !important;
+    filter: brightness(0.5) !important;
+  }
+
+  /* Make C/F buttons dark, highlight active */
+  .unit-toggle {
+    background: #23233a !important;
+    border: 1px solid #39395a !important;
+  }
+  .unit-btn {
+    background: none !important;
+    color: #bdb6d6 !important;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: background 0.2s, color 0.2s;
+  }
+  .unit-btn.active {
+    background: #a991f7 !important;
+    color: #23233a !important;
+    font-weight: 700;
+    box-shadow: 0 1px 6px rgba(169,145,247,0.15);
+  }
+  .unit-btn:focus {
+    outline: 2px solid #a991f7 !important;
+    outline-offset: 2px;
+  }
+
+  input[type="number"] {
+    background: var(--input-bg) !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--input-border) !important;
+    box-shadow: none !important;
+  }
+  input[type="number"]:focus {
+    border-color: var(--input-focus-border) !important;
+    background: var(--input-focus-bg) !important;
+    color: var(--text-color) !important;
+    box-shadow: none !important;
+  }
+  input[type="date"]:focus {
+    border-color: var(--input-focus-border) !important;
+    background: var(--input-focus-bg) !important;
+    color: var(--text-color) !important;
+    box-shadow: none !important;
+  }
+
+  /* Dark mode: delete button is #39395a */
+  .entry-actions button.danger {
+    background: #39395a !important;
+    color: var(--error) !important;
+    border-color: #a991f7 !important;
+  }
 }
