@@ -861,10 +861,19 @@ function updateOvulationInfo(entries) {
     }
     if (warningResult.showWarning) {
         const dipDateObj = new Date(warningResult.dipDate);
-        if (result.date && new Date(result.date) >= dipDateObj) {
+        // New logic: clear dip if latest entry is 3 or more days after the dip
+        if (entriesSorted.length > 0) {
+            const latestEntryDate = new Date(entriesSorted[entriesSorted.length - 1].date);
+            const daysSinceDip = (latestEntryDate - dipDateObj) / (1000 * 60 * 60 * 24);
+            if (daysSinceDip >= 3) {
+                clearDip = true;
+                localStorage.removeItem('dipWarning');
+            }
+        }
+        if (!clearDip && result.date && new Date(result.date) >= dipDateObj) {
             clearDip = true;
             localStorage.removeItem('dipWarning');
-        } else {
+        } else if (!clearDip) {
             const entriesAfterDip = entries.filter(e => new Date(e.date) > dipDateObj && !e.fever);
             const dipTemp = entries.find(e => e.date === warningResult.dipDate)?.temperature;
             if (entriesAfterDip.length >= 4 && dipTemp !== undefined) {
