@@ -967,7 +967,10 @@ function exportToCSV() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `temperature-tracker-${new Date().toISOString().split('T')[0]}.csv`);
+    // Use local date for filename instead of UTC
+    const today = new Date();
+    const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    link.setAttribute('download', `temperature-tracker-${localDate}.csv`);
     link.style.visibility = 'hidden';
     
     // Trigger download
