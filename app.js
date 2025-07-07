@@ -892,6 +892,27 @@ function updateOvulationInfo(entries) {
         localStorage.removeItem('dipWarning');
     }
     dipData = JSON.parse(localStorage.getItem('dipWarning')) || null;
+
+    // --- Ovulation confirmation persistence logic ---
+    let ovulationConfirmation = JSON.parse(localStorage.getItem('ovulationConfirmation')) || null;
+    if (result.date) {
+        // Store ovulation confirmation if new or changed
+        if (!ovulationConfirmation || ovulationConfirmation.date !== result.date.toISOString()) {
+            ovulationConfirmation = {
+                date: result.date.toISOString(),
+                confidence: result.confidence,
+                message: result.message
+            };
+            localStorage.setItem('ovulationConfirmation', JSON.stringify(ovulationConfirmation));
+        }
+    }
+    // Always show the last confirmed ovulation until a new one is detected
+    let showOvulation = false;
+    if (ovulationConfirmation && ovulationConfirmation.date) {
+        showOvulation = true;
+    }
+    // --- End ovulation confirmation persistence logic ---
+
     let dipWarningHtml = '';
     if ((!result.date || (dipData && dipData.dipDate && result.date && new Date(result.date) < new Date(dipData.dipDate))) && dipData && dipData.show) {
         let windowStart = '', windowEnd = '';
@@ -905,14 +926,32 @@ function updateOvulationInfo(entries) {
         }
         dipWarningHtml = `<p class="warning">⚠️ Possible ovulation dip detected. Ovulation may be between ${windowStart} and ${windowEnd}.<br><span class='info-note'>This is a potentially fertile window; unprotected sex during this time may result in pregnancy.</span></p>`;
     }
-    if (result.date) {
-        const formattedDate = formatDate(result.date.toISOString().split('T')[0]);
+    if (result.date || showOvulation) {
+        // Prefer current result if present, else use stored confirmation
+        let displayDate = result.date ? result.date : (ovulationConfirmation ? new Date(ovulationConfirmation.date) : null);
+        let displayConfidence = result.date ? result.confidence : (ovulationConfirmation ? ovulationConfirmation.confidence : '');
+        let displayMessage = result.date ? result.message : (ovulationConfirmation ? ovulationConfirmation.message : '');
+        const formattedDate = formatDate(displayDate.toISOString().split('T')[0]);
+
+        // Calculate expected period window
+        let periodWindowHtml = '';
+        if (displayDate) {
+            const a = new Date(displayDate);
+            a.setDate(a.getDate() + 12);
+            const b = new Date(displayDate);
+            b.setDate(b.getDate() + 16);
+            const formattedA = formatDate(a.toISOString().split('T')[0]);
+            const formattedB = formatDate(b.toISOString().split('T')[0]);
+            periodWindowHtml = `<p class="period-window">Expect your period between <strong>${formattedA}</strong> and <strong>${formattedB}</strong>.<br><span class='info-note'>If your period does not occur after this window, consider taking a pregnancy test.</span></p>`;
+        }
+
         ovulationInfo.innerHTML = `
-            <div class="prediction ${result.confidence}">
+            <div class="prediction ${displayConfidence}">
                 <h3>Most Likely Ovulation Date</h3>
                 <p class="date">${formattedDate}</p>
-                <p class="confidence">Confidence: ${result.confidence}</p>
-                <p class="details">${result.message}</p>
+                <p class="confidence">Confidence: ${displayConfidence}</p>
+                <p class="details">${displayMessage}</p>
+                ${periodWindowHtml}
             </div>
             ${dipWarningHtml}
         `;
