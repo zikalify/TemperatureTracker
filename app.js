@@ -895,25 +895,28 @@ function updateOvulationInfo(entries) {
 
     // --- Ovulation confirmation persistence logic ---
     let ovulationConfirmation = JSON.parse(localStorage.getItem('ovulationConfirmation')) || null;
-    // Check if the stored ovulation confirmation is still valid
+    // Only remove confirmation if the supporting data is gone
     if (ovulationConfirmation && ovulationConfirmation.date) {
-        // The confirmation is valid only if the date is still supported by the current data
-        // We'll check if the current entries would still produce the same confirmation
-        // If not, remove it
-        let confirmationDate = new Date(ovulationConfirmation.date);
-        // Check if there is an entry for the confirmation date
-        const hasSupportingEntry = entries.some(e => {
-            // Allow for possible time portion in stored date
-            return e.date === confirmationDate.toISOString().slice(0,10);
-        });
-        // Also, check if the current calculation matches the stored confirmation
+        // Check if the current data would still confirm the same ovulation date
+        // We do this by running calculateOvulationDate and seeing if its result matches the stored confirmation
         let isStillConfirmed = false;
         if (result.date && result.date.toISOString() === ovulationConfirmation.date) {
             isStillConfirmed = true;
+        } else {
+            // If not, check if the data points for the stored confirmation date are still present
+            // (i.e., is there an entry for that date?)
+            const confirmationDateStr = ovulationConfirmation.date.slice(0, 10);
+            const hasSupportingEntry = entries.some(e => e.date === confirmationDateStr);
+            if (!hasSupportingEntry) {
+                // Data is gone, remove confirmation
+                localStorage.removeItem('ovulationConfirmation');
+                ovulationConfirmation = null;
+            }
+            // If the data is still there, keep the confirmation (do not remove just because a dip is detected)
         }
-        if (!hasSupportingEntry || !isStillConfirmed) {
-            localStorage.removeItem('ovulationConfirmation');
-            ovulationConfirmation = null;
+        if (!isStillConfirmed && ovulationConfirmation) {
+            // If the data is still there, keep the confirmation
+            // If the data is gone, it was already removed above
         }
     }
     if (result.date) {
@@ -927,7 +930,7 @@ function updateOvulationInfo(entries) {
             localStorage.setItem('ovulationConfirmation', JSON.stringify(ovulationConfirmation));
         }
     }
-    // Always show the last confirmed ovulation until a new one is detected
+    // Always show the last confirmed ovulation until a new one is detected or the data is deleted
     let showOvulation = false;
     if (ovulationConfirmation && ovulationConfirmation.date) {
         showOvulation = true;
