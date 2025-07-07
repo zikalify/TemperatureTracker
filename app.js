@@ -707,7 +707,7 @@ function calculateOvulationDate(entries) {
         date: bestOvulationDay,
         confidence: bestConfidence.level,
         message: bestOvulationDay ? 
-            `Ovulation detected with ${bestConfidence.level} confidence` :
+            `Ovulation detected with ${bestConfidence.level} confidence.` :
             'No clear ovulation pattern detected'
     };
 }
