@@ -895,6 +895,27 @@ function updateOvulationInfo(entries) {
 
     // --- Ovulation confirmation persistence logic ---
     let ovulationConfirmation = JSON.parse(localStorage.getItem('ovulationConfirmation')) || null;
+    // Check if the stored ovulation confirmation is still valid
+    if (ovulationConfirmation && ovulationConfirmation.date) {
+        // The confirmation is valid only if the date is still supported by the current data
+        // We'll check if the current entries would still produce the same confirmation
+        // If not, remove it
+        let confirmationDate = new Date(ovulationConfirmation.date);
+        // Check if there is an entry for the confirmation date
+        const hasSupportingEntry = entries.some(e => {
+            // Allow for possible time portion in stored date
+            return e.date === confirmationDate.toISOString().slice(0,10);
+        });
+        // Also, check if the current calculation matches the stored confirmation
+        let isStillConfirmed = false;
+        if (result.date && result.date.toISOString() === ovulationConfirmation.date) {
+            isStillConfirmed = true;
+        }
+        if (!hasSupportingEntry || !isStillConfirmed) {
+            localStorage.removeItem('ovulationConfirmation');
+            ovulationConfirmation = null;
+        }
+    }
     if (result.date) {
         // Store ovulation confirmation if new or changed
         if (!ovulationConfirmation || ovulationConfirmation.date !== result.date.toISOString()) {

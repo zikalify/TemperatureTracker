@@ -29,5 +29,9 @@
       "type": "image/png",
       "form_factor": "wide"
     }
-  ]
+  ],
+  "dark_mode": {
+    "background_color": "#000000",
+    "theme_color": "#000000"
+  }
 }
