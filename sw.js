@@ -1,4 +1,4 @@
-const CACHE_NAME = 'temperature-tracker-v42';
+const CACHE_NAME = 'temperature-tracker-v43';
 const ASSETS_TO_CACHE = [
   'index.html',
   'app.js',
