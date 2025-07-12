@@ -826,7 +826,7 @@ function checkEarlyWarningDip(entries) {
     if (temps.length < 2) return { showWarning: false, dipDate: null };
     const avg = temps.reduce((a, b) => a + b, 0) / temps.length;
     const latest = lastSixDays[lastSixDays.length - 1];
-    if (latest.temperature < avg - 0.10) {
+    if (latest.temperature < avg - 0.05) {
         return { showWarning: true, dipDate: latest.date };
     }
     return { showWarning: false, dipDate: null };
