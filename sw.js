@@ -1,8 +1,10 @@
-const CACHE_NAME = 'temperature-tracker-v43';
+const CACHE_NAME = 'temperature-tracker-v45';
 const ASSETS_TO_CACHE = [
   'index.html',
   'app.js',
   'styles.css',
+  'favicon.ico',
+  'manifest.json',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css',
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
   'https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js'
@@ -44,24 +46,39 @@ self.addEventListener('fetch', (event) => {
         if (response) {
           return response;
         }
-        return fetch(event.request).then(
-          (response) => {
+        
+        // Try network first
+        return fetch(event.request)
+          .then((networkResponse) => {
             // Check if we received a valid response
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
+            if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+              return networkResponse;
             }
 
             // Clone the response
-            const responseToCache = response.clone();
+            const responseToCache = networkResponse.clone();
 
+            // Cache the response
             caches.open(CACHE_NAME)
               .then((cache) => {
                 cache.put(event.request, responseToCache);
               });
 
-            return response;
-          }
-        );
+            return networkResponse;
+          })
+          .catch(() => {
+            // If network request fails, try to serve from cache
+            return caches.match(event.request)
+              .then((cachedResponse) => {
+                if (cachedResponse) {
+                  return cachedResponse;
+                }
+                
+                // If no cached response, return an offline page if it exists
+                return caches.match('/offline.html')
+                  .then((offlineResponse) => offlineResponse || Response.error());
+              });
+          });
       })
     );
 });
