@@ -992,15 +992,20 @@ function updateOvulationInfo(entries) {
 
 // Register Service Worker
 if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-            .then(registration => {
-                console.log('ServiceWorker registration successful');
-            })
-            .catch(err => {
-                console.log('ServiceWorker registration failed: ', err);
-            });
-    });
+    // Register immediately, don't wait for load event
+    navigator.serviceWorker.register('sw.js')
+        .then(registration => {
+            console.log('ServiceWorker registration successful');
+            // After registration, check if we're online
+            if (!navigator.onLine) {
+                console.log('App is offline, using cached version');
+                // Force reload to use the service worker
+                window.location.reload();
+            }
+        })
+        .catch(err => {
+            console.log('ServiceWorker registration failed: ', err);
+        });
 }
 
 // Export entries to CSV
