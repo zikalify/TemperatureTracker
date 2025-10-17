@@ -1,5 +1,5 @@
-const CACHE_NAME = 'temperature-tracker-v48';
-const ASSETS_TO_CACHE = [
+const CACHE_NAME = 'temperature-tracker-v49';
+const ASSETS = [
   '/',
   'index.html',
   'app.js',
@@ -17,9 +17,17 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => {
+      .then(cache => {
         console.log('Caching app shell');
-        return cache.addAll(ASSETS_TO_CACHE);
+        // Don't wait for all assets to cache
+        return Promise.all(
+          ASSETS.map(asset => {
+            return cache.add(asset).catch(err => {
+              console.log('Failed to cache:', asset, err);
+              return Promise.resolve(); // Don't fail the entire install if one asset fails
+            });
+          })
+        );
       })
   );
   // Activate the new service worker immediately
@@ -29,40 +37,32 @@ self.addEventListener('install', (event) => {
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
+    caches.keys().then(cacheNames => {
       return Promise.all(
-        cacheNames.map((cache) => {
+        cacheNames.map(cache => {
           if (cache !== CACHE_NAME) {
-            console.log('Clearing old cache');
+            console.log('Clearing old cache:', cache);
             return caches.delete(cache);
           }
         })
-      );
+      ).then(() => self.clients.claim()); // Take control of all clients
     })
   );
 });
 
 // Fetch event - serve from cache, falling back to network
 self.addEventListener('fetch', (event) => {
-  const requestUrl = new URL(event.request.url);
-  
   // Skip non-GET requests and non-http(s) requests
   if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
     return;
   }
 
-  // For navigation requests, always try to serve index.html from cache
+  // For navigation requests, serve index.html from cache
   if (event.request.mode === 'navigate') {
     event.respondWith(
       caches.match('index.html')
-        .then(cachedResponse => {
-          // Return cached index.html immediately
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          // If not in cache, try network but fall back to empty response
-          return fetch(event.request).catch(() => new Response('', { status: 0 }));
-        })
+        .then(cachedResponse => cachedResponse || fetch(event.request))
+        .catch(() => caches.match('index.html'))
     );
     return;
   }
@@ -70,7 +70,7 @@ self.addEventListener('fetch', (event) => {
   // For all other requests, try cache first, then network
   event.respondWith(
     caches.match(event.request)
-      .then((cachedResponse) => {
+      .then(cachedResponse => {
         // Return from cache if available
         if (cachedResponse) {
           return cachedResponse;
@@ -78,7 +78,7 @@ self.addEventListener('fetch', (event) => {
 
         // Otherwise try network, but don't fail if offline
         return fetch(event.request)
-          .then((response) => {
+          .then(response => {
             // Check if valid response
             if (!response || response.status !== 200 || response.type !== 'basic') {
               return response;
@@ -89,17 +89,15 @@ self.addEventListener('fetch', (event) => {
 
             // Cache the response for next time
             caches.open(CACHE_NAME)
-              .then((cache) => {
-                cache.put(event.request, responseToCache);
-              });
+              .then(cache => cache.put(event.request, responseToCache))
+              .catch(err => console.log('Failed to cache response:', err));
 
             return response;
           })
           .catch(() => {
             // For HTML requests, try to serve index.html if possible
             if (event.request.headers.get('accept').includes('text/html')) {
-              return caches.match('index.html')
-                .then(response => response || new Response('', { status: 0 }));
+              return caches.match('index.html');
             }
             return new Response('', { status: 0 }); // Return empty response for non-HTML requests
           });

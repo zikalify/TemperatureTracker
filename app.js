@@ -1207,8 +1207,12 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// After finding the latest dip, check if the dip entry still exists
-if (dipData && dipData.dipDate && !entries.some(e => e.date === dipData.dipDate)) {
-    localStorage.removeItem('dipWarning');
-    dipData = null;
+// Check for and clean up any stale dip warning data
+let dipData = JSON.parse(localStorage.getItem('dipWarning') || 'null');
+if (dipData && dipData.dipDate) {
+    const entries = getEntries();
+    if (!entries.some(e => e.date === dipData.dipDate)) {
+        localStorage.removeItem('dipWarning');
+        dipData = null;
+    }
 }
