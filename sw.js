@@ -1,4 +1,4 @@
-const CACHE_NAME = 'temperature-tracker-v52';
+const CACHE_NAME = 'temperature-tracker-v53';
 // Network timeout (ms) for flaky mobile connections — fall back to cache after this
 const NETWORK_TIMEOUT = 5000;
 const ASSETS = [
@@ -84,21 +84,47 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For navigation requests, prefer network (with timeout) then fall back to cache -> offline page
+  // For navigation requests, serve the app shell from cache first (stale-while-revalidate)
+  // This makes sure the app opens instantly and works even on flaky/half-connected mobile networks.
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetchWithTimeout(event.request, NETWORK_TIMEOUT)
-        .then(networkResponse => {
+      (async () => {
+        const cache = await caches.open(CACHE_NAME);
+
+        // Try to serve a cached navigation response first
+        const cachedIndex = await cache.match('index.html');
+        if (cachedIndex) {
+          // Kick off a background update of index.html when we're online
+          event.waitUntil(
+            fetchWithTimeout(event.request, NETWORK_TIMEOUT)
+              .then(networkResponse => {
+                if (networkResponse && networkResponse.ok) {
+                  const copy = networkResponse.clone();
+                  return cache.put('index.html', copy);
+                }
+              })
+              .catch(() => {
+                // Ignore network errors during background update
+              })
+          );
+          return cachedIndex;
+        }
+
+        // No cached shell yet: try network, then fall back to offline page
+        try {
+          const networkResponse = await fetchWithTimeout(event.request, NETWORK_TIMEOUT);
           if (networkResponse && networkResponse.ok) {
-            // Update cache in background
             const copy = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put('index.html', copy)).catch(() => {});
+            await cache.put('index.html', copy);
             return networkResponse;
           }
-          // If network response is bad, try cache
-          return caches.match('index.html').then(cached => cached || caches.match('offline.html'));
-        })
-        .catch(() => caches.match('index.html').then(cached => cached || caches.match('offline.html')))
+        } catch (e) {
+          // ignore and fall through to cache/offline fallback
+        }
+
+        // Final fallback: cached index.html or offline.html if available
+        return (await cache.match('index.html')) || (await cache.match('offline.html')) || Response.error();
+      })()
     );
     return;
   }
