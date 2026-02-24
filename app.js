@@ -1153,11 +1153,18 @@ function importFromCSV(file) {
             const lines = text.split('\n');
             const headers = lines[0].split(',').map(h => h.trim());
 
-            // Validate CSV format
-            if (headers.length < 2 ||
-                !headers.some(h => h.toLowerCase().includes('date')) ||
-                !headers.some(h => h.toLowerCase().includes('temperature'))) {
-                throw new Error('Invalid CSV format. Please use the exported CSV file format.');
+            // Validate CSV format - accept both exact 3-column format and flexible format
+            const hasExactFormat = headers.length === 3 && 
+                headers[0].trim() === 'Date' && 
+                headers[1].trim() === 'Temperature (°C)' && 
+                headers[2].trim() === 'Notes';
+            
+            const hasFlexibleFormat = headers.length >= 2 &&
+                headers.some(h => h.toLowerCase().includes('date')) &&
+                headers.some(h => h.toLowerCase().includes('temperature'));
+            
+            if (!hasExactFormat && !hasFlexibleFormat) {
+                throw new Error('Invalid CSV format. Expected headers: Date,Temperature (°C),Notes');
             }
 
             // Get existing entries
@@ -1191,10 +1198,24 @@ function importFromCSV(file) {
 
                     if (values.length < 2) continue;
 
-                    // Extract values (assuming format: date, temperature, notes)
-                    const date = values[0].trim();
-                    const temp = parseFloat(values[1].trim());
-                    const notes = values.length > 2 ? values[2].trim().replace(/^"|"$/g, '') : '';
+                    // Extract values based on format
+                    let date, temp, notes;
+                    
+                    // Handle exact 3-column format: Date,Temperature (°C),Notes
+                    if (hasExactFormat) {
+                        date = values[0].trim();
+                        temp = parseFloat(values[1].trim());
+                        notes = values.length > 2 ? values[2].trim().replace(/^"|"$/g, '') : '';
+                    } else {
+                        // Handle flexible format - find date and temperature columns
+                        const dateIndex = headers.findIndex(h => h.toLowerCase().includes('date'));
+                        const tempIndex = headers.findIndex(h => h.toLowerCase().includes('temperature'));
+                        const notesIndex = headers.findIndex(h => h.toLowerCase().includes('notes'));
+                        
+                        date = values[dateIndex]?.trim() || '';
+                        temp = parseFloat(values[tempIndex]?.trim() || '');
+                        notes = notesIndex >= 0 && values[notesIndex] ? values[notesIndex].trim().replace(/^"|"$/g, '') : '';
+                    }
 
                     // Validate date and temperature
                     if (!date || isNaN(temp) || !isValidDate(date)) continue;
