@@ -1,4 +1,4 @@
-const CACHE_NAME = 'temperature-tracker-v55';
+const CACHE_NAME = 'temperature-tracker-v57';
 // Network timeout (ms) for flaky mobile connections — fall back to cache after this
 const NETWORK_TIMEOUT = 5000;
 const ASSETS = [
@@ -98,7 +98,7 @@ self.addEventListener('fetch', (event) => {
           try {
             const networkResponse = await fetchWithTimeout(event.request, NETWORK_TIMEOUT);
             if (networkResponse && networkResponse.ok) {
-              cache.put(event.request, networkResponse.clone()).catch(() => {});
+              cache.put(event.request, networkResponse.clone()).catch(() => { });
             }
             return networkResponse;
           } catch (e) {
@@ -167,7 +167,7 @@ self.addEventListener('fetch', (event) => {
           // If the response is valid, cache a copy (including CORS responses)
           if (networkResponse && networkResponse.ok) {
             const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache)).catch(() => {});
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache)).catch(() => { });
             return networkResponse;
           }
           // Bad network response -> try cache fallback

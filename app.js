@@ -1,5 +1,5 @@
 // Make handleEditClick globally available
-window.handleEditClick = function(event, id) {
+window.handleEditClick = function (event, id) {
     event.stopPropagation();
     event.preventDefault();
     const entries = getEntries();
@@ -25,34 +25,23 @@ window.handleEditClick = function(event, id) {
 };
 
 // Initialize modal and related functions when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Make showEditModal globally available
-    window.showEditModal = function(entry) {
+    window.showEditModal = function (entry) {
         const editId = document.getElementById('editId');
         const editDate = document.getElementById('editDate');
         const editTemperature = document.getElementById('editTemperature');
         const editNotes = document.getElementById('editNotes');
-        
+
         if (!editId || !editDate || !editTemperature || !editNotes) {
             console.error('Required form elements not found');
-            // Try to initialize the modal again
-            initializeModal();
-            // Try to get the elements again
-            const editId = document.getElementById('editId');
-            const editDate = document.getElementById('editDate');
-            const editTemperature = document.getElementById('editTemperature');
-            const editNotes = document.getElementById('editNotes');
-            
-            if (!editId || !editDate || !editTemperature || !editNotes) {
-                console.error('Still could not find required form elements');
-                return;
-            }
+            return;
         }
-        
+
         // Set form values
         editId.value = entry.id;
         editDate.value = entry.date;
-        
+
         // Display temperature with exact value from storage
         const currentUnit = getCurrentUnit();
         if (currentUnit === 'C') {
@@ -61,13 +50,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const fahrenheit = celsiusToFahrenheit(entry.temperature);
             editTemperature.value = fahrenheit.toFixed(2);
         }
-        
+
         editNotes.value = entry.notes || '';
-        
+
         // Show the modal
         showModal();
     };
-    
+
     // Initialize modal
     function initializeModal() {
         // Make sure modal elements exist
@@ -78,16 +67,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         return true;
     }
-    
+
     // Initialize the modal when the page loads
     initializeModal();
 });
 
-// Utility function to handle temperature display without altering the value
-function formatTempForDisplay(temp) {
-    // Simply return the number as is - let toFixed handle the display
-    return temp;
-}
+
 
 // DOM Elements
 const tempForm = document.getElementById('tempForm');
@@ -98,11 +83,11 @@ const fahrenheitBtn = document.getElementById('fahrenheitBtn');
 
 // Temperature conversion functions
 function celsiusToFahrenheit(celsius) {
-    return (celsius * 9/5) + 32;
+    return (celsius * 9 / 5) + 32;
 }
 
 function fahrenheitToCelsius(fahrenheit) {
-    return (fahrenheit - 32) * 5/9;
+    return (fahrenheit - 32) * 5 / 9;
 }
 
 // Get current temperature unit (C or F)
@@ -114,18 +99,18 @@ function getCurrentUnit() {
 function formatTemperature(temp, withUnit = true) {
     const isCelsius = getCurrentUnit() === 'C';
     let displayTemp = parseFloat(temp);
-    
+
     if (!isCelsius) {
         // Convert to Fahrenheit
-        displayTemp = (displayTemp * 9/5) + 32;
+        displayTemp = (displayTemp * 9 / 5) + 32;
     }
-    
+
     // Format with exactly 2 decimal places for display
     const formatted = displayTemp.toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     });
-    
+
     return withUnit ? `${formatted}°${isCelsius ? 'C' : 'F'}` : formatted;
 }
 
@@ -139,17 +124,17 @@ function getTempForStorage(temp) {
 function updateTempInputs() {
     const tempInput = document.getElementById('temperature');
     const editTempInput = document.getElementById('editTemperature');
-    
+
     // Update placeholders and labels
     const unit = getCurrentUnit();
     document.querySelector('label[for="temperature"]').textContent = `Temperature (°${unit})`;
     document.querySelector('label[for="editTemperature"]').textContent = `Temperature (°${unit})`;
-    
+
     // Convert current values if they exist
     if (tempInput.value) {
         tempInput.value = formatTemperature(tempInput.value, false);
     }
-    
+
     if (editTempInput && editTempInput.value) {
         editTempInput.value = formatTemperature(editTempInput.value, false);
     }
@@ -166,10 +151,10 @@ document.addEventListener('DOMContentLoaded', () => {
         celsiusBtn.classList.add('active');
         fahrenheitBtn.classList.remove('active');
     }
-    
+
     // Update temperature display based on saved preference
     updateTempInputs();
-    
+
     // Add event listeners for unit toggle buttons
     celsiusBtn.addEventListener('click', () => {
         if (!celsiusBtn.classList.contains('active')) {
@@ -180,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loadEntries();
         }
     });
-    
+
     fahrenheitBtn.addEventListener('click', () => {
         if (!fahrenheitBtn.classList.contains('active')) {
             fahrenheitBtn.classList.add('active');
@@ -190,20 +175,20 @@ document.addEventListener('DOMContentLoaded', () => {
             loadEntries();
         }
     });
-    
+
     const today = new Date();
     // Format the date in YYYY-MM-DD format using local time
     const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     const dateInput = document.getElementById('date');
     const dateDisplay = document.getElementById('dateDisplay');
-    
+
     if (dateInput && dateDisplay) {
         // Set the max attribute to today's date to prevent future date selection
         dateInput.max = formattedDate;
         dateInput.value = formattedDate;
         // Format the initial display
         updateDateDisplay(dateInput, dateDisplay);
-        
+
         // Add event listener for date changes
         dateInput.addEventListener('change', (e) => {
             // If somehow a future date is still selected (e.g., via manual input), reset to today
@@ -214,27 +199,27 @@ document.addEventListener('DOMContentLoaded', () => {
             updateDateDisplay(e.target, dateDisplay);
         });
     }
-    
+
     loadEntries();
-    
+
     // Add event listener for expand/collapse button if it exists
     const toggleButton = document.getElementById('toggleEntries');
     const entriesList = document.querySelector('.entries-list');
-    
+
     if (toggleButton && entriesList) {
         // Set initial state
         entriesList.classList.add('collapsed');
-        
+
         toggleButton.addEventListener('click', () => {
             const isExpanding = entriesList.classList.contains('collapsed');
-            
+
             // Toggle the classes
             entriesList.classList.toggle('collapsed');
             entriesList.classList.toggle('expanded');
-            
+
             // Update the button icon and text
             const icon = toggleButton.querySelector('i');
-            
+
             if (icon) {
                 if (isExpanding) {
                     icon.className = 'fas fa-chevron-up';
@@ -302,21 +287,21 @@ document.addEventListener('keydown', (e) => {
 });
 
 // Update the edit form submission handler
-document.getElementById('editForm').addEventListener('submit', function(e) {
+document.getElementById('editForm').addEventListener('submit', function (e) {
     e.preventDefault();
     e.stopPropagation();
-    
+
     const id = document.getElementById('editId').value;
     const dateInput = document.getElementById('editDate').value;
     let tempInput = document.getElementById('editTemperature').value.trim();
     const notes = document.getElementById('editNotes').value;
-    
+
     // Validate temperature input
     if (!tempInput || tempInput === '') {
         alert('Please enter a temperature');
         return false;
     }
-    
+
     // Convert the input temperature to a number, handling both comma and dot
     let temperature;
     try {
@@ -334,7 +319,7 @@ document.getElementById('editForm').addEventListener('submit', function(e) {
         alert('Please enter a valid temperature (e.g., 36.75 or 36,75)');
         return false;
     }
-    
+
     // Validate temperature range before conversion
     const currentUnit = getCurrentUnit();
     if (!isValidTemperature(temperature, currentUnit)) {
@@ -342,32 +327,32 @@ document.getElementById('editForm').addEventListener('submit', function(e) {
         alert(`Please enter a valid temperature between ${range}`);
         return false;
     }
-    
+
     // Convert to Celsius if we're in Fahrenheit mode
     if (currentUnit === 'F') {
         temperature = fahrenheitToCelsius(temperature);
     }
-    
+
     // Keep the temperature value with 4 decimal places for precision
     temperature = parseFloat(temperature.toFixed(4));
-    
+
     // Automatically determine if temperature indicates fever (≥38°C or ≥100.4°F)
     const hasFever = temperature >= 38;
-    
+
     try {
         const entries = getEntries();
         const index = entries.findIndex(e => e.id === id);
-        
+
         if (index !== -1) {
             // Update the entry with new values
             entries[index].date = dateInput;
             entries[index].temperature = temperature;
             entries[index].notes = notes;
             entries[index].fever = hasFever;
-            
+
             // Save the updated entries
             localStorage.setItem('temperatureEntries', JSON.stringify(entries));
-            
+
             // Hide the modal and refresh the entries list
             hideModal();
             loadEntries();
@@ -379,7 +364,7 @@ document.getElementById('editForm').addEventListener('submit', function(e) {
         console.error('Error updating entry:', error);
         alert('An error occurred while updating the entry');
     }
-    
+
     return false;
 });
 
@@ -401,25 +386,17 @@ function formatDate(dateString) {
 // Helper function to update date display
 function updateDateDisplay(inputElement, displayElement) {
     if (!inputElement || !displayElement) return;
-    
+
     const date = new Date(inputElement.value);
     if (isNaN(date.getTime())) return;
-    
-    const options = { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+
+    const options = {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
     };
     displayElement.textContent = date.toLocaleDateString('en-US', options);
-}
-
-// Get device's current date in YYYY-MM-DD format
-// Uses the device's local timezone
-function getCurrentLocalDate() {
-    const now = new Date();
-    // Use the device's local timezone
-    return now.toISOString().split('T')[0];
 }
 
 /**
@@ -434,18 +411,6 @@ function parseLocalDate(dateStr) {
 }
 
 /**
- * Calculate days between two dates (local timezone)
- * @param {Date} date1 - First date
- * @param {Date} date2 - Second date
- * @returns {number} Number of days between dates
- */
-function daysBetween(date1, date2) {
-    const oneDay = 24 * 60 * 60 * 1000; // hours*minutes*seconds*milliseconds
-    const diffDays = Math.round(Math.abs((date1 - date2) / oneDay));
-    return diffDays;
-}
-
-/**
  * Validate temperature value is within reasonable range
  * @param {number} temp - Temperature in Celsius
  * @param {string} unit - 'C' or 'F'
@@ -453,10 +418,10 @@ function daysBetween(date1, date2) {
  */
 function isValidTemperature(temp, unit) {
     if (isNaN(temp)) return false;
-    
+
     // Convert to Celsius for comparison
-    const tempC = unit === 'F' ? (temp - 32) * 5/9 : temp;
-    
+    const tempC = unit === 'F' ? (temp - 32) * 5 / 9 : temp;
+
     // Reasonable range: 35°C to 42°C (95°F to 107.6°F)
     return tempC >= 35 && tempC <= 42;
 }
@@ -464,22 +429,22 @@ function isValidTemperature(temp, unit) {
 // Handle form submission
 function handleFormSubmit(e) {
     e.preventDefault();
-    
+
     const dateInput = document.getElementById('date');
     const tempInput = document.getElementById('temperature');
     const notes = document.getElementById('notes').value;
-    
+
     // Validate date is not in the future
     const today = new Date();
     const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const selectedDate = new Date(dateInput.value);
     const selectedDateLocal = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
-    
+
     if (selectedDateLocal > todayLocal) {
         alert('Cannot add entries for future dates');
         return;
     }
-    
+
     // Validate temperature
     const tempStr = tempInput.value.replace(',', '.');
     let temp = parseFloat(tempStr);
@@ -488,19 +453,19 @@ function handleFormSubmit(e) {
         alert('Please enter a valid temperature.');
         return;
     }
-    
+
     // Round user input to 2 decimal places.
     temp = parseFloat(temp.toFixed(2));
     if (!isValidTemperature(temp, getCurrentUnit())) {
         alert('Please enter a valid temperature between 35°C-42°C (95°F-107.6°F)');
         return;
     }
-    
+
     const temperature = getTempForStorage(temp);
-    
+
     // Automatically determine if temperature indicates fever (≥38°C or ≥100.4°F)
     const hasFever = temperature >= 38;
-    
+
     const entry = {
         id: Date.now().toString(),
         date: dateInput.value,
@@ -510,7 +475,7 @@ function handleFormSubmit(e) {
         // Store the timezone offset in minutes
         timezoneOffset: new Date().getTimezoneOffset()
     };
-    
+
     saveEntry(entry);
     tempForm.reset();
     // Keep the selected date instead of resetting to today
@@ -545,10 +510,7 @@ function getEntries() {
     return entries ? JSON.parse(entries) : [];
 }
 
-// Get entries for ovulation calculation (no date filtering, just return all entries)
-function getRecentEntriesForOvulation(entries) {
-    return [...entries]; // Return a copy of all entries
-}
+
 
 // Detects a possible ovulation dip: latest temp is significantly below the average of last 6 calendar days
 function checkEarlyWarningDip(entries) {
@@ -650,7 +612,7 @@ function updateOvulationInfo(entries) {
         }
         dipWarningHtml = `<p class="warning">⚠️ Possible ovulation dip detected. Ovulation may be between ${windowStart} and ${windowEnd}.<br><span class='info-note'>This is a potentially fertile window; unprotected sex during this time may result in pregnancy.</span></p>`;
     }
-    
+
     if (result.date) {
         // Show current calculation result
         const formattedDate = formatDate(`${result.date.getFullYear()}-${String(result.date.getMonth() + 1).padStart(2, '0')}-${String(result.date.getDate()).padStart(2, '0')}`);
@@ -693,19 +655,17 @@ function updateOvulationInfo(entries) {
 function loadEntries() {
     const entries = getEntries();
     entriesList.innerHTML = '';
-    
+
     if (entries.length === 0) {
         entriesList.innerHTML = '<p>No entries yet. Add your first temperature reading above.</p>';
         updateOvulationInfo([]);
         return;
     }
-    
-    // Get recent entries for ovulation calculation
-    const recentEntriesForOvulation = getRecentEntriesForOvulation(entries);
-    
+
+
     // Sort all entries by date (newest first) for display
     const sortedEntries = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
-    
+
     sortedEntries.forEach(entry => {
         const entryElement = document.createElement('div');
         entryElement.className = 'entry-card';
@@ -725,22 +685,12 @@ function loadEntries() {
         `;
         entriesList.appendChild(entryElement);
     });
-    
+
     // Update ovulation info using only recent entries
     updateOvulationInfo(entries);
 }
 
-// Helper function to get entries within a date range, excluding fever readings
-function getEntriesInRange(entries, startDate, endDate) {
-    return entries
-        .filter(entry => {
-            const entryDate = new Date(entry.date);
-            return !entry.fever && 
-                   entryDate >= startDate && 
-                   entryDate <= endDate;
-        })
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
-}
+
 
 // Calculate all possible ovulation dates and return the most recent one
 function calculateOvulationDate(entries) {
@@ -751,18 +701,16 @@ function calculateOvulationDate(entries) {
     const sortedEntries = [...entries]
         .filter(entry => !entry.fever)
         .sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
-    
+
     // Find all possible ovulation instances throughout the entire dataset
     const allOvulationInstances = [];
-    
+
     // Check for 3-over-flexible window pattern throughout all data
     for (let i = 3; i < sortedEntries.length - 2; i++) {
         // Get the last 6 calendar days of data (not necessarily 6 entries)
         const currentDate = parseLocalDate(sortedEntries[i].date);
         const sixDaysAgo = new Date(currentDate);
         sixDaysAgo.setDate(currentDate.getDate() - 6);
-        // Move sixDaysAgo back by one more day
-        sixDaysAgo.setDate(sixDaysAgo.getDate() - 1);
         // Create array of all dates in the 6-day window
         const windowDates = [];
         for (let d = new Date(sixDaysAgo); d < currentDate; d.setDate(d.getDate() + 1)) {
@@ -776,43 +724,36 @@ function calculateOvulationDate(entries) {
             const entry = sortedEntries.find(e => e.date === date);
             if (entry) sixDayWindow.push(entry);
         });
-            
+
         // Skip if we don't have enough days with data in the window
         if (sixDayWindow.length < 4) continue;
-            
+
         // Get the 3 days after the window
         const threeDays = sortedEntries
             .filter(entry => {
                 const entryDate = parseLocalDate(entry.date);
-                return entryDate >= currentDate && 
-                       entryDate <= new Date(currentDate.getTime() + 3 * 24 * 60 * 60 * 1000);
+                return entryDate >= currentDate &&
+                    entryDate <= new Date(currentDate.getTime() + 3 * 24 * 60 * 60 * 1000);
             });
-            
+
         if (threeDays.length < 3) continue;
-        
+
         // Calculate the average of the 6-day window
         const sixDayAvg = sixDayWindow.reduce((sum, entry) => sum + entry.temperature, 0) / sixDayWindow.length;
-        
+
         // Check if next 3 days are all above the average
         const isRise = threeDays.every(day => day.temperature > sixDayAvg + 0.2);
-        
+
         if (isRise) {
             // Ovulation is the day BEFORE the first day of the rise
             // The first day of the 3-day rise is when temperatures start staying elevated
             const firstRiseDate = parseLocalDate(threeDays[0].date);
             const ovulationDate = new Date(firstRiseDate);
             ovulationDate.setDate(firstRiseDate.getDate() - 1); // Day before the rise started
-            
+
             // Calculate confidence based on data quality and number of entries
             const confidence = calculateConfidence(sixDayWindow, threeDays, sixDayAvg);
-            
-            // Adjust confidence based on number of entries in the 6-day window
-            if (sixDayWindow.length < 6) {
-                if (confidence.level === 'high') confidence.level = 'medium';
-                else if (confidence.level === 'medium') confidence.level = 'low';
-                confidence.details += ` (only ${sixDayWindow.length} of 6 days with data)`;
-            }
-            
+
             allOvulationInstances.push({
                 date: ovulationDate,
                 confidence: confidence.level,
@@ -820,20 +761,20 @@ function calculateOvulationDate(entries) {
             });
         }
     }
-    
+
     // If no ovulation instances found, return no result
     if (allOvulationInstances.length === 0) {
-        return { 
-            date: null, 
-            confidence: 'low', 
-            message: 'No clear ovulation pattern detected' 
+        return {
+            date: null,
+            confidence: 'low',
+            message: 'No clear ovulation pattern detected'
         };
     }
-    
+
     // Sort all instances by date and return the most recent one
     allOvulationInstances.sort((a, b) => new Date(b.date) - new Date(a.date));
     const mostRecent = allOvulationInstances[0];
-    
+
     return {
         date: mostRecent.date,
         confidence: mostRecent.confidence,
@@ -850,78 +791,77 @@ function calculateConfidence(sixDays, threeDays, sixDayAvg) {
     const riseAmounts = threeDays.map(day => day.temperature - sixDayAvg);
     const significantRiseCount = riseAmounts.filter(rise => rise >= 0.15).length; // Reduced threshold for significant rise
     const avgRise = riseAmounts.reduce((a, b) => a + b, 0) / riseAmounts.length;
-    
+
     // 3. Analyze baseline stability
     const baselineTemps = sixDays.map(day => day.temperature);
     const baselineStability = calculateStability(baselineTemps);
-    
+
     // 4. Calculate rise consistency (more lenient calculation)
-    const riseStability = calculateStability(threeDays.map(day => day.temperature));
-    const isConsistentRise = riseAmounts.every((val, i, arr) => i === 0 || val >= arr[i-1] - 0.1);
-    
+    const isConsistentRise = riseAmounts.every((val, i, arr) => i === 0 || val >= arr[i - 1] - 0.1);
+
     // 5. Check for sustained rise over more days if needed
     const extendedRiseDays = riseAmounts.filter((val, i, arr) => {
         // Look for at least 3 out of 4 days with rising or stable temps
         if (i < 3) return true;
-        const window = arr.slice(i-3, i+1);
-        return window.every((v, idx) => idx === 0 || v >= window[idx-1] - 0.1);
+        const window = arr.slice(i - 3, i + 1);
+        return window.every((v, idx) => idx === 0 || v >= window[idx - 1] - 0.1);
     }).length;
-    
+
     // 6. Determine base confidence (more lenient criteria)
     if (avgRise >= 0.3 && baselineStability < 0.3) {
-        confidence = { 
-            level: 'high', 
-            details: 'Clear temperature shift with stable baseline' 
+        confidence = {
+            level: 'high',
+            details: 'Clear temperature shift with stable baseline'
         };
     } else if (avgRise >= 0.2 || (significantRiseCount >= 2 && isConsistentRise)) {
-        confidence = { 
-            level: 'medium', 
-            details: 'Moderate temperature shift detected' 
+        confidence = {
+            level: 'medium',
+            details: 'Moderate temperature shift detected'
         };
     } else if (extendedRiseDays >= 3) {
-        confidence = { 
+        confidence = {
             level: 'medium',
             details: 'Sustained temperature rise detected over multiple days'
         };
     }
-    
+
     // 7. Adjust for data quality - be strict with missing data
     if (dataDensity < 1) {
         if (dataDensity < 0.67) {  // Less than 4 out of 6 days
-            confidence = { 
-                level: 'low', 
-                details: 'Insufficient data in baseline period (need at least 4 of 6 days)' 
+            confidence = {
+                level: 'low',
+                details: 'Insufficient data in baseline period (need at least 4 of 6 days)'
             };
         } else if (confidence.level === 'high' && dataDensity < 0.85) {
             confidence.level = 'medium';
             confidence.details += ' (reduced confidence due to missing data)';
-        } else if (confidence.level === 'medium' && dataDensity < 0.67) {
-            confidence.level = 'low';
-            confidence.details += ' (reduced confidence due to missing data)';
         }
     }
-    
+
     // 8. If we have sufficient data and a clear pattern, be more lenient with confidence
     if (dataDensity >= 0.67) {  // At least 4 out of 6 days
-    // If we have a clear temperature rise pattern
-    if (avgRise >= 0.2 || (significantRiseCount >= 2 && isConsistentRise)) {
-        // If we have 5–6 days of data, allow medium confidence
-        if (dataDensity >= 0.83) {
-            if (confidence.level !== 'high') {
-                confidence = { 
+        // If we have a clear temperature rise pattern
+        if (avgRise >= 0.2 || (significantRiseCount >= 2 && isConsistentRise)) {
+            // If we have 5–6 days of data, allow medium confidence
+            if (dataDensity >= 0.83) {
+                if (confidence.level !== 'high') {
+                    confidence = {
+                        level: 'medium',
+                        details: 'Clear temperature pattern detected with good data coverage'
+                    };
+                }
+            } else if (confidence.level === 'low') {
+                // With 4 days, be more cautious but still acknowledge the pattern
+                confidence = {
                     level: 'medium',
-                    details: 'Clear temperature pattern detected with good data coverage' 
+                    details: 'Possible temperature shift detected (moderate data coverage)'
                 };
             }
-        } else if (confidence.level === 'low') {
-            // With 4 days, be more cautious but still acknowledge the pattern
-            confidence = { 
-                level: 'medium',
-                details: 'Possible temperature shift detected (moderate data coverage)' 
-            };
         }
+
+        return confidence;
     }
-    
+
     return confidence;
 }
 
@@ -930,7 +870,7 @@ function calculateConfidence(sixDays, threeDays, sixDayAvg) {
  */
 function calculateStability(readings) {
     if (readings.length < 2) return 0;
-    
+
     const avg = readings.reduce((a, b) => a + b, 0) / readings.length;
     const squareDiffs = readings.map(x => Math.pow(x - avg, 2));
     const variance = squareDiffs.reduce((a, b) => a + b, 0) / readings.length;
@@ -976,7 +916,7 @@ function exportToCSV() {
     ];
 
     const csvContent = csvRows.join('\n');
-    
+
     // Create download link
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -987,7 +927,7 @@ function exportToCSV() {
     const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     link.setAttribute('download', `temperature-tracker-${localDate}.csv`);
     link.style.visibility = 'hidden';
-    
+
     // Trigger download
     document.body.appendChild(link);
     link.click();
@@ -997,39 +937,39 @@ function exportToCSV() {
 // Import entries from CSV
 function importFromCSV(file) {
     const reader = new FileReader();
-    
-    reader.onload = function(e) {
+
+    reader.onload = function (e) {
         try {
             const text = e.target.result;
             const lines = text.split('\n');
             const headers = lines[0].split(',').map(h => h.trim());
-            
+
             // Validate CSV format
-            if (headers.length < 2 || 
+            if (headers.length < 2 ||
                 !headers.some(h => h.toLowerCase().includes('date')) ||
                 !headers.some(h => h.toLowerCase().includes('temperature'))) {
                 throw new Error('Invalid CSV format. Please use the exported CSV file format.');
             }
-            
+
             // Get existing entries
             const existingEntries = getEntries();
             const existingEntryMap = new Map(existingEntries.map(entry => [entry.date, entry]));
             let importedCount = 0;
             let skippedCount = 0;
-            
+
             // Process each line
             for (let i = 1; i < lines.length; i++) {
                 if (!lines[i].trim()) continue;
-                
+
                 try {
                     // Simple CSV parsing (won't handle all edge cases, but works for our format)
                     const values = [];
                     let current = '';
                     let inQuotes = false;
-                    
+
                     for (let j = 0; j < lines[i].length; j++) {
                         const char = lines[i][j];
-                        if (char === '"' && (j === 0 || lines[i][j-1] !== '\\')) {
+                        if (char === '"' && (j === 0 || lines[i][j - 1] !== '\\')) {
                             inQuotes = !inQuotes;
                         } else if (char === ',' && !inQuotes) {
                             values.push(current);
@@ -1039,60 +979,60 @@ function importFromCSV(file) {
                         }
                     }
                     values.push(current);
-                    
+
                     if (values.length < 2) continue;
-                    
+
                     // Extract values (assuming format: date, temperature, notes)
                     const date = values[0].trim();
                     const temp = parseFloat(values[1].trim());
                     const notes = values.length > 2 ? values[2].trim().replace(/^"|"$/g, '') : '';
-                    
+
                     // Validate date and temperature
                     if (!date || isNaN(temp) || !isValidDate(date)) continue;
-                    
+
                     // Create or update entry
                     const entry = {
                         id: existingEntryMap.has(date) ? existingEntryMap.get(date).id : Date.now() + Math.random().toString(36).substr(2, 9),
                         date,
                         temperature: temp,
                         notes: notes || '',
-                        timestamp: existingEntryMap.has(date) 
-                            ? existingEntryMap.get(date).timestamp 
+                        timestamp: existingEntryMap.has(date)
+                            ? existingEntryMap.get(date).timestamp
                             : new Date().toISOString(),
                         // Preserve fever status for existing entries, detect for new entries
-                        fever: existingEntryMap.has(date) 
-                            ? existingEntryMap.get(date).fever 
+                        fever: existingEntryMap.has(date)
+                            ? existingEntryMap.get(date).fever
                             : temp >= 38.0 // Mark as fever if temperature is 38.0°C or higher
                     };
-                    
+
                     saveEntry(entry);
                     importedCount++;
-                    
+
                 } catch (error) {
                     console.error('Error processing line:', lines[i], error);
                     skippedCount++;
                 }
             }
-            
+
             // Reload entries and show success message
             loadEntries();
-            
+
             let message = `Successfully imported ${importedCount} entries.`;
             if (skippedCount > 0) {
                 message += ` ${skippedCount} entries were skipped due to errors.`;
             }
             alert(message);
-            
+
         } catch (error) {
             console.error('Error importing CSV:', error);
             alert(`Error importing CSV: ${error.message}`);
         }
     };
-    
-    reader.onerror = function() {
+
+    reader.onerror = function () {
         alert('Error reading file');
     };
-    
+
     reader.readAsText(file);
 }
 
@@ -1101,25 +1041,25 @@ function isValidDate(dateString) {
     const regEx = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateString.match(regEx)) return false;
     const d = new Date(dateString);
-    return !isNaN(d.getTime()) && d.toISOString().slice(0,10) === dateString;
+    return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === dateString;
 }
 
 // Initialize backup functionality
 document.addEventListener('DOMContentLoaded', () => {
     // Previous initialization code...
-    
+
     // Initialize backup buttons
     const exportBtn = document.getElementById('exportBtn');
     const importBtn = document.getElementById('importBtn');
     const importFile = document.getElementById('importFile');
-    
+
     if (exportBtn) {
         exportBtn.addEventListener('click', exportToCSV);
     }
-    
+
     if (importBtn && importFile) {
         importBtn.addEventListener('click', () => importFile.click());
-        
+
         importFile.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
@@ -1131,7 +1071,7 @@ document.addEventListener('DOMContentLoaded', () => {
             e.target.value = '';
         });
     }
-    
+
     // Rest of the initialization code...
 });
 
@@ -1162,5 +1102,4 @@ if (dipData && dipData.dipDate) {
         localStorage.removeItem('dipWarning');
         dipData = null;
     }
-}
 }
