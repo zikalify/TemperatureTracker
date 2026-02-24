@@ -1,4 +1,4 @@
-const CACHE_NAME = 'temperature-tracker-v53';
+const CACHE_NAME = 'temperature-tracker-v55';
 // Network timeout (ms) for flaky mobile connections — fall back to cache after this
 const NETWORK_TIMEOUT = 5000;
 const ASSETS = [
@@ -82,6 +82,34 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET requests and non-http(s) requests
   if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
     return;
+  }
+
+  // For core assets (app.js/styles.css), prefer the network so soft refreshes pick up
+  // updated logic. Fall back to cache when offline.
+  try {
+    const url = new URL(event.request.url);
+    const isSameOrigin = url.origin === self.location.origin;
+    const isCoreAsset = isSameOrigin && (url.pathname.endsWith('/app.js') || url.pathname.endsWith('/styles.css'));
+
+    if (isCoreAsset) {
+      event.respondWith(
+        (async () => {
+          const cache = await caches.open(CACHE_NAME);
+          try {
+            const networkResponse = await fetchWithTimeout(event.request, NETWORK_TIMEOUT);
+            if (networkResponse && networkResponse.ok) {
+              cache.put(event.request, networkResponse.clone()).catch(() => {});
+            }
+            return networkResponse;
+          } catch (e) {
+            return (await cache.match(event.request)) || Response.error();
+          }
+        })()
+      );
+      return;
+    }
+  } catch (e) {
+    // If URL parsing fails for any reason, fall through to existing behavior.
   }
 
   // For navigation requests, serve the app shell from cache first (stale-while-revalidate)
