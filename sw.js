@@ -1,4 +1,4 @@
-const CACHE_NAME = 'temperature-tracker-v58';
+const CACHE_NAME = 'temperature-tracker-v60';
 // Network timeout (ms) for flaky mobile connections — fall back to cache after this
 const NETWORK_TIMEOUT = 5000;
 const ASSETS = [
