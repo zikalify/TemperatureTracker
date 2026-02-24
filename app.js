@@ -692,7 +692,7 @@ function loadEntries() {
 
 
 
-// Calculate all possible ovulation dates and return the most recent one
+// Calculate all possible ovulation dates using enhanced adaptive algorithm
 function calculateOvulationDate(entries) {
     if (!entries || entries.length < 6) {
         return { date: null, confidence: 'low', message: 'Insufficient data' };
@@ -702,62 +702,31 @@ function calculateOvulationDate(entries) {
         .filter(entry => !entry.fever)
         .sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
 
-    // Find all possible ovulation instances throughout the entire dataset
+    // Calculate individual's baseline variability
+    const personalVariability = calculatePersonalVariability(sortedEntries);
+    
     const allOvulationInstances = [];
 
-    // Check for 3-over-flexible window pattern throughout all data
-    for (let i = 3; i < sortedEntries.length - 2; i++) {
-        // Get the last 6 calendar days of data (not necessarily 6 entries)
-        const currentDate = parseLocalDate(sortedEntries[i].date);
-        const sixDaysAgo = new Date(currentDate);
-        sixDaysAgo.setDate(currentDate.getDate() - 6);
-        // Create array of all dates in the 6-day window
-        const windowDates = [];
-        for (let d = new Date(sixDaysAgo); d < currentDate; d.setDate(d.getDate() + 1)) {
-            const localDate = new Date(d);
-            const dateStr = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')}`;
-            windowDates.push(dateStr);
-        }
-        // Get entries for each date in the window
-        let sixDayWindow = [];
-        windowDates.forEach(date => {
-            const entry = sortedEntries.find(e => e.date === date);
-            if (entry) sixDayWindow.push(entry);
-        });
+    // Check multiple patterns
+    for (let i = 6; i < sortedEntries.length - 2; i++) {
+        const patterns = [
+            check3Over6Pattern(sortedEntries, i, personalVariability),
+            checkSustainedRisePattern(sortedEntries, i, personalVariability),
+            checkBiphasicPattern(sortedEntries, i, personalVariability)
+        ];
 
-        // Skip if we don't have enough days with data in the window
-        if (sixDayWindow.length < 4) continue;
+        // Find strongest pattern for this window
+        const bestPattern = patterns
+            .filter(p => p.detected)
+            .sort((a, b) => b.confidenceScore - a.confidenceScore)[0];
 
-        // Get the 3 days after the window
-        const threeDays = sortedEntries
-            .filter(entry => {
-                const entryDate = parseLocalDate(entry.date);
-                return entryDate >= currentDate &&
-                    entryDate <= new Date(currentDate.getTime() + 3 * 24 * 60 * 60 * 1000);
-            });
-
-        if (threeDays.length < 3) continue;
-
-        // Calculate the average of the 6-day window
-        const sixDayAvg = sixDayWindow.reduce((sum, entry) => sum + entry.temperature, 0) / sixDayWindow.length;
-
-        // Check if next 3 days are all above the average
-        const isRise = threeDays.every(day => day.temperature > sixDayAvg + 0.2);
-
-        if (isRise) {
-            // Ovulation is the day BEFORE the first day of the rise
-            // The first day of the 3-day rise is when temperatures start staying elevated
-            const firstRiseDate = parseLocalDate(threeDays[0].date);
-            const ovulationDate = new Date(firstRiseDate);
-            ovulationDate.setDate(firstRiseDate.getDate() - 1); // Day before the rise started
-
-            // Calculate confidence based on data quality and number of entries
-            const confidence = calculateConfidence(sixDayWindow, threeDays, sixDayAvg);
-
+        if (bestPattern) {
             allOvulationInstances.push({
-                date: ovulationDate,
-                confidence: confidence.level,
-                details: confidence.details
+                date: bestPattern.ovulationDate,
+                confidence: bestPattern.confidence,
+                details: bestPattern.details,
+                patternType: bestPattern.type,
+                confidenceScore: bestPattern.confidenceScore
             });
         }
     }
@@ -778,8 +747,248 @@ function calculateOvulationDate(entries) {
     return {
         date: mostRecent.date,
         confidence: mostRecent.confidence,
-        message: `Ovulation detected with ${mostRecent.confidence} confidence.`
+        message: `Ovulation detected with ${mostRecent.confidence} confidence using ${mostRecent.patternType} pattern.`
     };
+}
+
+// Helper functions for enhanced ovulation detection
+
+// Calculate personal temperature variability using rolling windows
+function calculatePersonalVariability(entries) {
+    if (entries.length < 12) return 0.15; // Default variability
+    
+    const variations = [];
+    for (let i = 12; i < entries.length; i++) {
+        const window = entries.slice(i-12, i);
+        const temps = window.map(e => e.temperature);
+        const median = calculateMedian(temps);
+        const mad = calculateMAD(temps, median);
+        variations.push(mad);
+    }
+    
+    // Return 75th percentile of variations as personal baseline
+    return calculatePercentile(variations, 0.75);
+}
+
+// Calculate median of array
+function calculateMedian(values) {
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 0 
+        ? (sorted[mid - 1] + sorted[mid]) / 2 
+        : sorted[mid];
+}
+
+// Calculate Median Absolute Deviation
+function calculateMAD(values, median) {
+    const deviations = values.map(v => Math.abs(v - median));
+    return calculateMedian(deviations);
+}
+
+// Calculate percentile
+function calculatePercentile(values, percentile) {
+    const sorted = [...values].sort((a, b) => a - b);
+    const index = (sorted.length - 1) * percentile;
+    const lower = Math.floor(index);
+    const upper = Math.ceil(index);
+    const weight = index % 1;
+    
+    if (lower === upper) return sorted[lower];
+    return sorted[lower] * (1 - weight) + sorted[upper] * weight;
+}
+
+// Get adaptive threshold based on personal variability
+function getAdaptiveThreshold(personalVariability, dataQuality) {
+    const baseThreshold = 0.25; // Increased from 0.2
+    const variabilityAdjustment = Math.min(personalVariability * 0.3, 0.1); // Reduced adjustment
+    const qualityAdjustment = dataQuality < 0.8 ? 0.03 : 0; // Reduced adjustment
+    
+    return baseThreshold + variabilityAdjustment - qualityAdjustment;
+}
+
+// Get 6-day baseline window
+function getSixDayWindow(entries, currentIndex) {
+    const currentDate = parseLocalDate(entries[currentIndex].date);
+    const sixDaysAgo = new Date(currentDate);
+    sixDaysAgo.setDate(currentDate.getDate() - 6);
+    
+    const windowDates = [];
+    for (let d = new Date(sixDaysAgo); d < currentDate; d.setDate(d.getDate() + 1)) {
+        const localDate = new Date(d);
+        const dateStr = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')}`;
+        windowDates.push(dateStr);
+    }
+    
+    let sixDayWindow = [];
+    windowDates.forEach(date => {
+        const entry = entries.find(e => e.date === date);
+        if (entry) sixDayWindow.push(entry);
+    });
+    
+    return sixDayWindow;
+}
+
+// Get 3-day rise window
+function getThreeDayRise(entries, currentIndex) {
+    const currentDate = parseLocalDate(entries[currentIndex].date);
+    
+    return entries.filter(entry => {
+        const entryDate = parseLocalDate(entry.date);
+        return entryDate >= currentDate &&
+            entryDate <= new Date(currentDate.getTime() + 3 * 24 * 60 * 60 * 1000);
+    });
+}
+
+// Enhanced 3-over-6 pattern detection
+function check3Over6Pattern(entries, currentIndex, variability) {
+    const sixDayWindow = getSixDayWindow(entries, currentIndex);
+    const threeDayRise = getThreeDayRise(entries, currentIndex);
+    
+    if (sixDayWindow.length < 3 || threeDayRise.length < 3) {
+        return { detected: false };
+    }
+    
+    const baselineMedian = calculateMedian(sixDayWindow.map(e => e.temperature));
+    const dataQuality = sixDayWindow.length / 6;
+    const threshold = getAdaptiveThreshold(variability, dataQuality);
+    
+    // More lenient: 2 of 3 days above threshold, or all 3 above baseline
+    const riseDays = threeDayRise.filter(e => e.temperature > baselineMedian + threshold);
+    const allAboveBaseline = threeDayRise.every(e => e.temperature > baselineMedian);
+    
+    // Stricter detection: need 2 of 3 days above higher threshold
+    const detected = (riseDays.length >= 2 && threshold <= 0.3) || (allAboveBaseline && riseDays.length >= 2);
+    
+    if (detected) {
+        const confidence = calculateEnhancedConfidence(sixDayWindow, threeDayRise, baselineMedian, variability);
+        return {
+            detected: true,
+            ovulationDate: new Date(parseLocalDate(threeDayRise[0].date).getTime() - 24*60*60*1000),
+            confidence: confidence.level,
+            details: confidence.details,
+            type: '3-over-6-adaptive',
+            confidenceScore: confidence.score
+        };
+    }
+    
+    return { detected: false };
+}
+
+// Sustained rise pattern detection (4-5 days)
+function checkSustainedRisePattern(entries, currentIndex, variability) {
+    const sixDayWindow = getSixDayWindow(entries, currentIndex);
+    
+    if (sixDayWindow.length < 3) return { detected: false };
+    
+    const baselineMedian = calculateMedian(sixDayWindow.map(e => e.temperature));
+    const threshold = getAdaptiveThreshold(variability, sixDayWindow.length / 6) * 0.9; // Less lenient multiplier
+    
+    // Look for 4-5 consecutive days of rising temperatures
+    for (let days = 4; days <= 5; days++) {
+        const riseWindow = entries.slice(currentIndex, currentIndex + days);
+        if (riseWindow.length < days) continue;
+        
+        const riseDays = riseWindow.filter(e => e.temperature > baselineMedian + threshold);
+        const avgRise = riseWindow.reduce((sum, e) => sum + (e.temperature - baselineMedian), 0) / riseWindow.length;
+        
+        // Stricter requirements: need more days above threshold and higher average rise
+        if (riseDays.length >= Math.ceil(days * 0.8) && avgRise >= 0.2) {
+            const confidence = calculateEnhancedConfidence(sixDayWindow, riseWindow, baselineMedian, variability);
+            return {
+                detected: true,
+                ovulationDate: new Date(parseLocalDate(riseWindow[0].date).getTime() - 24*60*60*1000),
+                confidence: confidence.level,
+                details: confidence.details,
+                type: 'sustained-rise',
+                confidenceScore: confidence.score
+            };
+        }
+    }
+    
+    return { detected: false };
+}
+
+// Biphasic shift pattern detection
+function checkBiphasicPattern(entries, currentIndex, variability) {
+    const sixDayWindow = getSixDayWindow(entries, currentIndex);
+    const threeDayRise = getThreeDayRise(entries, currentIndex);
+    
+    if (sixDayWindow.length < 4 || threeDayRise.length < 3) {
+        return { detected: false };
+    }
+    
+    const baselineMedian = calculateMedian(sixDayWindow.map(e => e.temperature));
+    const riseMedian = calculateMedian(threeDayRise.map(e => e.temperature));
+    
+    // Check for overall shift in temperature range - stricter criteria
+    const shift = riseMedian - baselineMedian;
+    if (shift >= 0.2 && shift <= 0.35) { // Narrower, higher shift range
+        const confidence = calculateEnhancedConfidence(sixDayWindow, threeDayRise, baselineMedian, variability);
+        return {
+            detected: true,
+            ovulationDate: new Date(parseLocalDate(threeDayRise[0].date).getTime() - 24*60*60*1000),
+            confidence: confidence.level,
+            details: confidence.details,
+            type: 'biphasic-shift',
+            confidenceScore: confidence.score
+        };
+    }
+    
+    return { detected: false };
+}
+
+// Enhanced confidence calculation
+function calculateEnhancedConfidence(baseline, rise, baselineMedian, variability) {
+    let score = 0;
+    let details = [];
+    
+    // Data completeness (0-30 points)
+    const completeness = baseline.length / 6;
+    score += completeness * 30;
+    details.push(`Data coverage: ${Math.round(completeness * 100)}%`);
+    
+    // Rise magnitude (0-25 points) - higher threshold for scoring
+    const avgRise = rise.reduce((sum, day) => sum + (day.temperature - baselineMedian), 0) / rise.length;
+    score += Math.min(avgRise * 80, 25); // Increased multiplier
+    details.push(`Average rise: ${avgRise.toFixed(2)}°C`);
+    
+    // Pattern consistency (0-25 points)
+    const consistency = calculateConsistency(rise);
+    score += consistency * 25;
+    details.push(`Pattern consistency: ${Math.round(consistency * 100)}%`);
+    
+    // Personal fit (0-20 points) - stricter scoring
+    const personalFit = calculatePersonalFit(rise, baselineMedian, variability);
+    score += personalFit * 20;
+    details.push(`Personal pattern match: ${Math.round(personalFit * 100)}%`);
+    
+    // Convert score to confidence level - higher thresholds
+    if (score >= 85) return { level: 'high', score, details: details.join(', ') };
+    if (score >= 65) return { level: 'medium', score, details: details.join(', ') };
+    return { level: 'low', score, details: details.join(', ') };
+}
+
+// Calculate pattern consistency
+function calculateConsistency(rise) {
+    if (rise.length < 2) return 0;
+    
+    let consistentDays = 0;
+    for (let i = 1; i < rise.length; i++) {
+        if (rise[i].temperature >= rise[i-1].temperature - 0.1) {
+            consistentDays++;
+        }
+    }
+    
+    return consistentDays / (rise.length - 1);
+}
+
+// Calculate personal fit to expected pattern
+function calculatePersonalFit(rise, baselineMedian, variability) {
+    const expectedRise = 0.2 + (variability * 0.5);
+    const actualRise = rise.reduce((sum, day) => sum + (day.temperature - baselineMedian), 0) / rise.length;
+    
+    const fit = 1 - Math.abs(actualRise - expectedRise) / expectedRise;
+    return Math.max(0, Math.min(1, fit));
 }
 
 function calculateConfidence(sixDays, threeDays, sixDayAvg) {
