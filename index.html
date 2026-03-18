@@ -2,236 +2,122 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Temperature Tracker</title>
-    <!-- Favicon -->
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
-    <!-- Web App Manifest -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Symphony - Natural Family Planning</title>
+    <meta name="theme-color" content="#fcfaf8">
+    <meta name="description" content="A natural family planning tracker combining Symptothermal methods.">
     <link rel="manifest" href="manifest.json">
-    <!-- iOS Icons -->
-    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
-    <link rel="apple-touch-startup-image" href="icons/icon-512x512.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <!-- Android Splash Screen -->
-    <meta name="theme-color" content="#ffffff">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="TempTrack">
-    <meta name="application-name" content="TempTrack">
-    <!-- Splash Screen for Android -->
-    <link rel="icon" sizes="192x192" href="icons/icon-192x192.png">
-    <link rel="icon" sizes="512x512" href="icons/icon-512x512.png">
-    <link rel="shortcut icon" href="icons/icon-192x192.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        .form-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-        
-        .unit-toggle {
-            display: flex;
-            background: #f5f5f5;
-            border-radius: 12px;
-            padding: 2px;
-            border: 1px solid #ddd;
-            height: 32px;
-        }
-        
-        .unit-btn {
-            background: none;
-            border: none;
-            padding: 0 16px;
-            font-size: 14px;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-            font-weight: 500;
-            color: #666;
-            height: 100%;
-        }
-        
-        .unit-btn.active {
-            background: white;
-            color: #2196F3;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            font-weight: 600;
-        }
-        
-        .unit-btn:focus {
-            outline: none;
-        }
-        
-        .checkbox-container {
-            display: block;
-            position: relative;
-            padding-left: 35px;
-            margin-bottom: 12px;
-            cursor: pointer;
-            font-size: 16px;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        }
-        
-        .checkbox-container input {
-            position: absolute;
-            opacity: 0;
-            cursor: pointer;
-            height: 0;
-            width: 0;
-        }
-        
-        .checkmark {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 25px;
-            width: 25px;
-            background-color: #eee;
-            border-radius: 5px;
-        }
-        
-        .checkbox-container:hover input ~ .checkmark {
-            background-color: #ccc;
-        }
-        
-        .checkbox-container input:checked ~ .checkmark {
-            background-color: #2196F3;
-        }
-        
-        .checkmark:after {
-            content: "";
-            position: absolute;
-            display: none;
-        }
-        
-        .checkbox-container input:checked ~ .checkmark:after {
-            display: block;
-        }
-        
-        .checkbox-container .checkmark:after {
-            left: 9px;
-            top: 5px;
-            width: 5px;
-            height: 10px;
-            border: solid white;
-            border-width: 0 3px 3px 0;
-            -webkit-transform: rotate(45deg);
-            -ms-transform: rotate(45deg);
-            transform: rotate(45deg);
-        }
-    </style>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="apple-touch-icon" href="icon.svg">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Temperature Tracker</h1>
-            <p>Track your daily temperature readings to find out if you've ovulated
-
-
-</p>
-        </header>
-
-        <main>
-            <section class="temperature-form">
-                <div class="form-header">
-                    <h2>Add Temperature</h2>
-                    <div class="unit-toggle">
-                        <button id="celsiusBtn" class="unit-btn active">°C</button>
-                        <button id="fahrenheitBtn" class="unit-btn">°F</button>
-                    </div>
-                </div>
-                <form id="tempForm">
-                    <div class="form-group">
-                        <label for="date">Date</label>
-                        <div class="date-picker">
-                            <input type="date" id="date" name="date" required>
-                            <span class="date-display" id="dateDisplay"></span>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="temperature">Temperature (<span id="tempUnit">°C</span>):</label>
-                        <input type="number" id="temperature" step="0.01" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="notes">Notes (optional):</label>
-                        <textarea id="notes" rows="2" placeholder="e.g., Morning, before breakfast"></textarea>
-                    </div>
-                    <button type="submit" class="btn">Save</button>
-                </form>
-            </section>
-
-            <section class="ovulation-info-section">
-                <h2>Ovulation Information</h2>
-                <div id="ovulationInfo" class="ovulation-info">
-                    <p>Add at least 7 days of temperature data to estimate your ovulation date.</p>
-                </div>
-            </section>
-
-            <section class="entries">
-                <div class="entries-header">
-                    <h2>Your Entries</h2>
-                    <button id="toggleEntries" class="btn btn-expand">
-                        <i class="fas fa-chevron-down"></i> Show All
-                    </button>
-                </div>
-                <div id="entriesList" class="entries-list collapsed">
-                    <!-- Entries will be dynamically added here -->
-                </div>
-            </section>
-
-            <section class="backup-section">
-                <div class="backup-header">
-                    <h2>Backup</h2>
-                </div>
-                <div class="backup-options">
-                    <div class="backup-actions">
-                        <input type="file" id="importFile" accept=".csv,text/csv,application/vnd.ms-excel" style="display:none;">
-                        <button id="importBtn" class="btn">
-                            <i class="fas fa-file-import"></i> Import
-                        </button>
-                        <button id="exportBtn" class="btn">
-                            <i class="fas fa-file-export"></i> Export
-                        </button>
-                    </div>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <!-- Modal for editing entries -->
-    <div id="editModal" class="modal">
-        <div class="modal-content">
-            <button type="button" class="modal-close" aria-label="Close">&times;</button>
-            <h2>Edit Entry</h2>
-            <form id="editForm">
-                <input type="hidden" id="editId">
-                <div class="form-group">
-                    <label for="editDate">Date</label>
-                    <input type="date" id="editDate" name="date" required>
-                </div>
-                <div class="form-group">
-                    <label for="editTemperature">Temperature (<span id="editTempUnit">°C</span>):</label>
-                    <input type="number" id="editTemperature" step="0.01" required>
-                </div>
-                <div class="form-group">
-                    <label for="editNotes">Notes (optional):</label>
-                    <textarea id="editNotes" rows="2" placeholder="e.g., Morning, before breakfast"></textarea>
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Update</button>
-                    <button type="button" id="cancelEdit" class="btn btn-cancel">Cancel</button>
-                </div>
-            </form>
+    <header>
+        <div class="header-content">
+            <h1>Symphony</h1>
+            <p>Cycle Tracker</p>
         </div>
-    </div>
+        <div class="calendar-nav">
+            <button id="prevBtn" aria-label="Previous Day">&lt;</button>
+            <h2 id="currentDateDisplay">Today</h2>
+            <button id="nextBtn" aria-label="Next Day" disabled>&gt;</button>
+        </div>
+    </header>
 
-    <!-- Custom Script -->
+    <main>
+        <section id="insightCard" class="card insight-card">
+            <div class="insight-header">
+                <div class="fertility-indicator" id="fertilityIndicator"></div>
+                <h3 id="fertilityStatus">Loading Insight...</h3>
+            </div>
+            <p id="insightMessage">Analyzing your cycle data.</p>
+        </section>
+
+        <section class="card form-card">
+            <h3>Daily Log</h3>
+            <form id="dailyForm">
+                <div class="form-group">
+                    <label>Period / Bleeding</label>
+                    <div class="btn-group" id="bleedingGroup">
+                        <button type="button" class="option-btn active" data-value="unknown">Unknown</button>
+                        <button type="button" class="option-btn" data-value="none">None</button>
+                        <button type="button" class="option-btn" data-value="spotting">Spotting</button>
+                        <button type="button" class="option-btn" data-value="light">Light</button>
+                        <button type="button" class="option-btn" data-value="medium">Medium</button>
+                        <button type="button" class="option-btn" data-value="heavy">Heavy</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="bbtInput">Basal Body Temperature (BBT) °C</label>
+                    <input type="number" id="bbtInput" step="0.01" min="35.00" max="40.00" placeholder="e.g. 36.50">
+                </div>
+
+                <div class="form-group">
+                    <label>Cervical Mucus</label>
+                    <div class="btn-group" id="mucusGroup">
+                        <button type="button" class="option-btn active" data-value="unknown">Unknown</button>
+                        <button type="button" class="option-btn" data-value="dry">None/Dry</button>
+                        <button type="button" class="option-btn" data-value="damp">Cloudy/Damp</button>
+                        <button type="button" class="option-btn" data-value="slippery">Clear/Slippery</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="save-btn">Save Entry</button>
+            </form>
+        </section>
+        
+        <section class="card stats-card">
+            <h3>Cycle Overview</h3>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <span class="stat-label">Cycle Day</span>
+                    <span class="stat-value" id="cycleDayDisplay">-</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Phase</span>
+                    <span class="stat-value" id="cyclePhaseDisplay">-</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="card settings-card">
+            <h3>Data Backup</h3>
+            <div class="settings-actions">
+                <button type="button" id="exportBtn" class="option-btn">Export Data</button>
+                <label for="importInput" class="option-btn" style="cursor: pointer; display: flex; align-items: center; justify-content: center; margin: 0;">Import Data</label>
+                <input type="file" id="importInput" accept=".json" style="display: none;">
+            </div>
+        </section>
+
+        <section class="card faq-card">
+            <h3>How Symphony Works</h3>
+            <details class="faq-item">
+                <summary class="faq-question">When does a new cycle start?</summary>
+                <p class="faq-answer">A new cycle begins on your first day of full bleeding (Light, Medium, or Heavy). Spotting alone does not start a new cycle.</p>
+            </details>
+            <details class="faq-item">
+                <summary class="faq-question">What counts as fertile mucus?</summary>
+                <p class="faq-answer">Both <strong>Clear/Slippery</strong> and <strong>Cloudy/Damp</strong> mucus are considered fertile signs. Clear/Slippery indicates peak fertility, while Cloudy/Damp indicates potential fertility.</p>
+            </details>
+            <details class="faq-item">
+                <summary class="faq-question">Why am I still "Fertile" after my mucus dries up?</summary>
+                <p class="faq-answer">Symphony applies a <strong>3-Day Rule</strong>. Your fertile window stays open for 3 full days after your last observation of fertile mucus, providing a safety margin.</p>
+            </details>
+            <details class="faq-item">
+                <summary class="faq-question">How is ovulation confirmed?</summary>
+                <p class="faq-answer">Symphony looks for a temperature shift: 3 consecutive days of temperatures that are at least 0.2°C higher than the highest of the previous 6 days. Once confirmed, you enter the Low Fertility (Luteal) phase.</p>
+            </details>
+            <details class="faq-item">
+                <summary class="faq-question">What if I don't track my temperature (BBT)?</summary>
+                <p class="faq-answer">If no temperature is recorded, the app relies on your mucus observations. It will assume you are in the post-ovulatory (Low Fertility) phase 3 days after your last Clear/Slippery observation.</p>
+            </details>
+        </section>
+    </main>
+
+    <div id="toast" class="toast">Saved Successfully</div>
+
     <script src="app.js"></script>
 </body>
 </html>
